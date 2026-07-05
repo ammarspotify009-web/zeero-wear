@@ -40,6 +40,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const [error, setError] = useState('');
   const [completedStats, setCompletedStats] = useState({ total: 0, totalItems: 0 });
 
+  // Scroll to top when page loads
+  React.useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, []);
+
+
   const [form, setForm] = useState<FormData>({
     firstName: '',
     lastName: '',

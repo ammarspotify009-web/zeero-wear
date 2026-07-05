@@ -9,7 +9,6 @@ type AdminCategoriesProps = {
 
 const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategoriesChange }) => {
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
   
   // Form State
   const [id, setId] = useState('');
@@ -20,7 +19,7 @@ const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategor
   const [badge, setBadge] = useState('');
   const [badgeColor, setBadgeColor] = useState('badge-teal');
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !name) {
       alert("Category ID (slug) and Name are required.");
@@ -37,32 +36,24 @@ const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategor
       badgeColor: badge ? badgeColor : undefined
     };
 
-    setIsSaving(true);
-    let success = false;
     let updatedCategories: Category[];
-
     if (editingId) {
-      success = await updateCategory(newCategory);
+      updateCategory(newCategory);
       updatedCategories = categories.map(c => c.id === newCategory.id ? newCategory : c);
-      if (success) alert(`Category "${name}" updated successfully!`);
-      else alert(`Failed to update category. Please try again.`);
+      alert(`Category "${name}" updated successfully!`);
     } else {
+      // Check for duplicate ID
       if (categories.some(c => c.id === id)) {
         alert("A category with this ID already exists. Please choose a unique slug.");
-        setIsSaving(false);
         return;
       }
-      success = await addCategory(newCategory);
+      addCategory(newCategory);
       updatedCategories = [...categories, newCategory];
-      if (success) alert(`Category "${name}" added successfully!`);
-      else alert(`Failed to add category. Please try again.`);
+      alert(`Category "${name}" added successfully!`);
     }
 
-    setIsSaving(false);
-    if (success) {
-      onCategoriesChange(updatedCategories);
-      resetForm();
-    }
+    onCategoriesChange(updatedCategories);
+    resetForm();
   };
 
   const handleEdit = (category: Category) => {
@@ -76,14 +67,10 @@ const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategor
     setBadgeColor(category.badgeColor || 'badge-teal');
   };
 
-  const handleDelete = async (categoryId: string) => {
+  const handleDelete = (categoryId: string) => {
     if (confirm("Are you sure you want to delete this category? Sub-categories and products assigned to this category might be affected.")) {
-      const success = await deleteCategory(categoryId);
-      if (success) {
-        onCategoriesChange(categories.filter(c => c.id !== categoryId));
-      } else {
-        alert('Failed to delete category. Please try again.');
-      }
+      deleteCategory(categoryId);
+      onCategoriesChange(categories.filter(c => c.id !== categoryId));
     }
   };
 
@@ -210,8 +197,8 @@ const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategor
             )}
 
             <div style={{ display: 'flex', gap: '12px', marginTop: '16px' }}>
-              <button type="submit" className="btn-primary" disabled={isSaving} style={{ flex: 1, padding: '12px', opacity: isSaving ? 0.7 : 1 }}>
-                {isSaving ? 'Saving...' : (editingId ? 'Save Changes' : 'Add Category')}
+              <button type="submit" className="btn-primary" style={{ flex: 1, padding: '12px' }}>
+                {editingId ? 'Save Changes' : 'Add Category'}
               </button>
               {editingId && (
                 <button type="button" onClick={resetForm} style={{ padding: '12px', background: '#e2e8f0', color: 'var(--dark)', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>

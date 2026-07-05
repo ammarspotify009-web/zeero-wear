@@ -15,11 +15,11 @@ async function fixBrokenUrls() {
   for (const product of products) {
     if (!product.images) continue;
 
-    const hasBreaking = product.images.some(img => img.includes('s3.us-east-005.backblazeb2.com'));
+    const hasBreaking = product.images.some(img => img.includes('fus-east-005'));
     if (!hasBreaking) continue;
 
     const correctedImages = product.images.map(img =>
-      img.replace('https://zeero-kid-image.s3.us-east-005.backblazeb2.com', 'https://images.zeerowear.com/file/zeero-kid-image')
+      img.replace('https://fus-east-005.backblazeb2.com', 'https://f005.backblazeb2.com')
     );
 
     const { error: updateError } = await supabase

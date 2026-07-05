@@ -60,6 +60,8 @@ export default async function handler(req, res) {
       ContentType: contentType || 'image/jpeg',
     });
 
+    await s3Client.send(command);
+
     // Use Cloudflare CDN domain instead of direct Backblaze URL
     const CLOUDFLARE_DOMAIN = process.env.VITE_CDN_DOMAIN || 'images.zeerowear.com';
     const publicUrl = `https://${CLOUDFLARE_DOMAIN}/file/${B2_BUCKET_NAME}/${fileName}`;

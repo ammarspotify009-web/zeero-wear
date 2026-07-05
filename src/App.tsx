@@ -12,7 +12,7 @@ import Checkout from './pages/Checkout'
 import AdminLogin from './pages/admin/AdminLogin'
 import AdminDashboard from './pages/admin/AdminDashboard'
 import { loadProducts, addProduct as addProductToDb, deleteProduct as deleteProductFromDb, updateProduct as updateProductInDb, type Product } from './data/products'
-import { loadCategories, DEFAULT_CATEGORIES, type Category } from './data/categories'
+import { loadCategories, type Category } from './data/categories'
 import type { CartItem } from './types';
 
 export type { CartItem };
@@ -24,7 +24,7 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
 
 
 function AppContent() {
-  const [categories, setCategories] = useState<Category[]>(DEFAULT_CATEGORIES);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
@@ -33,15 +33,14 @@ function AppContent() {
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
 
   useEffect(() => {
-    const fetchAll = async () => {
-      const [productsData, categoriesData] = await Promise.all([
-        loadProducts(),
-        loadCategories(),
-      ]);
-      setProducts(productsData);
-      setCategories(categoriesData);
+    const fetchProducts = async () => {
+      const data = await loadProducts();
+      // Sort to show newest first, assuming data comes back unsorted or we want a specific order.
+      // We can just set it directly.
+      setProducts(data);
     };
-    fetchAll();
+    fetchProducts();
+    setCategories(loadCategories());
   }, []);
 
   const handleAddProduct = async (newProd: Product) => {

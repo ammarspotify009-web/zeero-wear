@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import type { Product } from '../../data/products';
-import { loadOrders, saveOrders, type Order } from '../../data/orders';
+import { loadOrders, updateOrderStatus, updateOrderDetails, type Order, type OrderEditFields } from '../../data/orders';
 import { loadSizes, addSizeToDb, deleteSizeFromDb } from '../../data/sizes';
 import { loadQueries, updateQueryStatus, type Query } from '../../data/queries';
 import { uploadImageToB2 } from '../../lib/b2Upload';
@@ -49,9 +49,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
   // Orders state
   const [orders, setOrders] = useState<Order[]>([]);
+  const [isLoadingOrders, setIsLoadingOrders] = useState(false);
+  const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null); // stores orderId being acted on
+  const [orderActionMsg, setOrderActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('All');
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
-  const [editForm, setEditForm] = useState({
+  const [editSaving, setEditSaving] = useState(false);
+  const [editForm, setEditForm] = useState<OrderEditFields>({
     customerName: '',
     customerPhone: '',
     customerEmail: '',
@@ -63,14 +67,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const [queries, setQueries] = useState<Query[]>([]);
   const [timePeriod, setTimePeriod] = useState<'7days' | '30days' | 'all'>('30days');
 
+  // ─── Load orders from Supabase ───
+  const refreshOrders = useCallback(async () => {
+    setIsLoadingOrders(true);
+    try {
+      const data = await loadOrders();
+      setOrders(data);
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  }, []);
+
   // Load async data on mount
   React.useEffect(() => {
     loadQueries().then(data => setQueries(data));
-    loadOrders().then(data => setOrders(data));
+    refreshOrders();
     loadSizes().then(data => {
       if (data.length > 0) setAvailableSizes(data);
     });
-  }, []);
+  }, [refreshOrders]);
 
   // Time filter logic
   const now = new Date();
@@ -356,34 +371,59 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
 
   // ─── ORDER HANDLERS ───
+  const showOrderMsg = (type: 'success' | 'error', text: string) => {
+    setOrderActionMsg({ type, text });
+    setTimeout(() => setOrderActionMsg(null), 3500);
+  };
+
   const handleApproveOrder = async (orderId: string) => {
     const orderToApprove = orders.find(o => o.id === orderId);
     if (!orderToApprove) return;
 
-    // Optimistic UI update
-    const updated = orders.map(o => o.id === orderId ? { ...o, status: 'Approved' as const } : o);
-    setOrders(updated);
-    saveOrders(updated);
+    setOrderActionLoading(orderId);
 
-    // Send confirmation email via backend if customer provided an email
-    if (orderToApprove.customerEmail && orderToApprove.customerEmail.trim() !== '') {
-      try {
-        await fetch('/api/admin/approve-order', {
+    // Optimistic UI
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Approved' as const } : o));
+
+    const ok = await updateOrderStatus(orderId, 'Approved');
+    setOrderActionLoading(null);
+
+    if (ok) {
+      showOrderMsg('success', `Order ${orderId} approved successfully.`);
+      // Send confirmation email if customer provided one
+      if (orderToApprove.customerEmail && orderToApprove.customerEmail.trim() !== '') {
+        fetch('/api/admin/approve-order', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ order: orderToApprove }),
-        });
-      } catch (err) {
-        console.error('Failed to send confirmation email', err);
+        }).catch(err => console.error('Failed to send confirmation email', err));
       }
+    } else {
+      // Revert optimistic update on failure
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: orderToApprove.status } : o));
+      showOrderMsg('error', `Failed to approve order ${orderId}. Please try again.`);
     }
   };
 
-  const handleCancelOrder = (orderId: string) => {
-    if (confirm('Are you sure you want to cancel this order?')) {
-      const updated = orders.map(o => o.id === orderId ? { ...o, status: 'Cancelled' as const } : o);
-      setOrders(updated);
-      saveOrders(updated);
+  const handleCancelOrder = async (orderId: string) => {
+    if (!confirm('Are you sure you want to cancel this order?')) return;
+
+    const orderToCancel = orders.find(o => o.id === orderId);
+    if (!orderToCancel) return;
+
+    setOrderActionLoading(orderId);
+
+    // Optimistic UI
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Cancelled' as const } : o));
+
+    const ok = await updateOrderStatus(orderId, 'Cancelled');
+    setOrderActionLoading(null);
+
+    if (ok) {
+      showOrderMsg('success', `Order ${orderId} cancelled.`);
+    } else {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: orderToCancel.status } : o));
+      showOrderMsg('error', `Failed to cancel order ${orderId}. Please try again.`);
     }
   };
 
@@ -399,18 +439,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
     });
   };
 
-  const handleSaveEdit = (e: React.FormEvent) => {
+  const handleSaveEdit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingOrder) return;
-    const updated = orders.map(o =>
-      o.id === editingOrder.id
-        ? { ...o, ...editForm }
-        : o
-    );
-    setOrders(updated);
-    saveOrders(updated);
-    setEditingOrder(null);
-    alert('Order updated successfully!');
+
+    setEditSaving(true);
+    const ok = await updateOrderDetails(editingOrder.id, editForm);
+    setEditSaving(false);
+
+    if (ok) {
+      setOrders(prev => prev.map(o =>
+        o.id === editingOrder.id ? { ...o, ...editForm } : o
+      ));
+      setEditingOrder(null);
+      showOrderMsg('success', `Order ${editingOrder.id} updated successfully.`);
+    } else {
+      alert('Failed to save changes to Supabase. Please try again.');
+    }
   };
 
   const handleMarkQueryResolved = async (queryId: string) => {
@@ -790,7 +835,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                       <th style={{ padding: '16px 20px' }}>Image</th>
                       <th>Product Name</th>
                       <th>Category</th>
-                      <th>Badge</th>
+                      <th style={{ minWidth: '110px' }}>Badge</th>
                       <th>Sizes</th>
                       <th>Price</th>
                       <th style={{ textAlign: 'center' }}>Actions</th>
@@ -812,11 +857,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                               borderRadius: '4px',
                               background: prod.badge === 'sale' ? '#ff3b30' : prod.badge === 'best-seller' ? '#d4940a' : prod.badge === 'new-arrival' ? 'var(--primary)' : '#888',
                               color: '#fff',
-                              fontWeight: 600
+                              fontWeight: 600,
+                              whiteSpace: 'nowrap',
+                              display: 'inline-block'
                             }}>
-                              {prod.badge.replace('-', ' ')}
+                              {prod.badge.replace(/-/g, ' ')}
                             </span>
-                          ) : '-'}
+                          ) : <span style={{ color: 'var(--text-light)', fontSize: '12px' }}>—</span>}
                         </td>
                         <td>
                           <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
@@ -1227,7 +1274,45 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                   View, approve, cancel or edit customer orders. Total: <strong>{orders.length}</strong> orders
                 </p>
               </div>
+              <button
+                onClick={refreshOrders}
+                disabled={isLoadingOrders}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '8px',
+                  padding: '10px 20px', borderRadius: '8px',
+                  border: '2px solid var(--primary)', background: '#fff',
+                  color: 'var(--primary)', fontWeight: 700, fontSize: '13px',
+                  cursor: isLoadingOrders ? 'not-allowed' : 'pointer',
+                  opacity: isLoadingOrders ? 0.6 : 1, transition: '0.2s'
+                }}
+              >
+                <i className={`fas fa-sync-alt ${isLoadingOrders ? 'fa-spin' : ''}`}></i>
+                {isLoadingOrders ? 'Refreshing...' : 'Refresh Orders'}
+              </button>
             </div>
+
+            {/* Action feedback banner */}
+            {orderActionMsg && (
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: '10px',
+                padding: '12px 18px', borderRadius: '10px', marginBottom: '20px',
+                background: orderActionMsg.type === 'success' ? 'rgba(123,171,139,0.15)' : 'rgba(255,59,48,0.1)',
+                border: `1px solid ${orderActionMsg.type === 'success' ? 'var(--success)' : '#ff3b30'}`,
+                color: orderActionMsg.type === 'success' ? 'var(--success)' : '#ff3b30',
+                fontWeight: 600, fontSize: '14px'
+              }}>
+                <i className={`fas ${orderActionMsg.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle'}`}></i>
+                {orderActionMsg.text}
+              </div>
+            )}
+
+            {/* Loading state */}
+            {isLoadingOrders && orders.length === 0 && (
+              <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: '16px', border: '1px solid var(--border)' }}>
+                <i className="fas fa-spinner fa-spin" style={{ fontSize: '36px', color: 'var(--primary)', marginBottom: '16px' }}></i>
+                <p style={{ color: 'var(--text-light)', fontWeight: 600 }}>Loading orders from database...</p>
+              </div>
+            )}
 
             {/* STATUS FILTER BAR */}
             <div className="order-filter-bar" style={{ display: 'flex', gap: '10px', marginBottom: '28px', flexWrap: 'wrap' }}>
@@ -1378,6 +1463,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                         {order.status === 'Pending' && (
                           <button
                             onClick={() => handleApproveOrder(order.id)}
+                            disabled={orderActionLoading === order.id}
                             className="order-action-btn approve-btn"
                             style={{
                               flex: 1,
@@ -1388,7 +1474,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                               color: '#fff',
                               fontWeight: 700,
                               fontSize: '13px',
-                              cursor: 'pointer',
+                              cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
+                              opacity: orderActionLoading === order.id ? 0.7 : 1,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1396,12 +1483,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                               transition: 'all 0.2s ease'
                             }}
                           >
-                            <i className="fas fa-check"></i> Approve
+                            {orderActionLoading === order.id
+                              ? <><i className="fas fa-spinner fa-spin"></i> Saving...</>
+                              : <><i className="fas fa-check"></i> Approve</>}
                           </button>
                         )}
                         {order.status === 'Pending' && (
                           <button
                             onClick={() => handleCancelOrder(order.id)}
+                            disabled={orderActionLoading === order.id}
                             className="order-action-btn cancel-btn"
                             style={{
                               flex: 1,
@@ -1412,7 +1502,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                               color: '#fff',
                               fontWeight: 700,
                               fontSize: '13px',
-                              cursor: 'pointer',
+                              cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
+                              opacity: orderActionLoading === order.id ? 0.7 : 1,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1448,6 +1539,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                         {order.status === 'Cancelled' && (
                           <button
                             onClick={() => handleApproveOrder(order.id)}
+                            disabled={orderActionLoading === order.id}
                             className="order-action-btn"
                             style={{
                               flex: 1,
@@ -1458,7 +1550,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                               color: '#fff',
                               fontWeight: 700,
                               fontSize: '13px',
-                              cursor: 'pointer',
+                              cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
+                              opacity: orderActionLoading === order.id ? 0.7 : 1,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1466,7 +1559,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                               transition: 'all 0.2s ease'
                             }}
                           >
-                            <i className="fas fa-redo"></i> Re-Approve
+                            {orderActionLoading === order.id
+                              ? <><i className="fas fa-spinner fa-spin"></i> Saving...</>
+                              : <><i className="fas fa-redo"></i> Re-Approve</>}
                           </button>
                         )}
                       </div>
@@ -1654,6 +1749,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                   </button>
                   <button
                     type="submit"
+                    disabled={editSaving}
                     style={{
                       flex: 2,
                       padding: '13px',
@@ -1663,7 +1759,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                       color: '#fff',
                       fontWeight: 700,
                       fontSize: '14px',
-                      cursor: 'pointer',
+                      cursor: editSaving ? 'not-allowed' : 'pointer',
+                      opacity: editSaving ? 0.7 : 1,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
@@ -1672,7 +1769,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                       boxShadow: '0 4px 14px rgba(44,62,107,0.3)'
                     }}
                   >
-                    <i className="fas fa-save"></i> Save Changes
+                    {editSaving
+                      ? <><i className="fas fa-spinner fa-spin"></i> Saving to Supabase...</>
+                      : <><i className="fas fa-save"></i> Save Changes</>}
                   </button>
                 </div>
               </form>

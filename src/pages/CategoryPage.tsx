@@ -115,7 +115,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ products, addToCart }) => {
         <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
           
           {/* Sidebar Filters */}
-          <div style={{ flex: '1 1 250px', minWidth: '240px' }}>
+          <div className="category-sidebar" style={{ flex: '1 1 250px', minWidth: '240px' }}>
             <div style={{
               background: 'var(--white)',
               borderRadius: '12px',

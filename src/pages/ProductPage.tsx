@@ -29,7 +29,6 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
   
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [emblaRef] = useEmblaCarousel({ loop: true });
-  const [showSizeChart, setShowSizeChart] = useState(false);
 
   // Update selected size when product changes, but leave empty initially to force selection
   useEffect(() => {
@@ -186,76 +185,6 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
                 ))}
               </div>
               
-              {/* Inline Size Chart */}
-              <div style={{ border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
-                <button 
-                  onClick={() => setShowSizeChart(!showSizeChart)} 
-                  style={{ width: '100%', padding: '12px', background: '#f8fafc', border: 'none', textAlign: 'left', fontWeight: 600, fontSize: '14px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-                >
-                  <span><i className="fas fa-ruler-horizontal" style={{ marginRight: '8px', color: 'var(--primary)' }}></i>{product.categories?.includes('footwear') ? 'Shoe Size Chart' : 'Standard Kids Size Chart'}</span>
-                  <i className={`fas fa-chevron-${showSizeChart ? 'up' : 'down'}`} style={{ color: 'var(--text-light)' }}></i>
-                </button>
-                
-                {showSizeChart && (
-                  <div style={{ padding: '12px', background: '#fff' }}>
-                    {product.categories?.includes('footwear') ? (
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                            <th style={{ padding: '8px' }}>Size</th>
-                            <th style={{ padding: '8px' }}>Inner Length (cm)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            { size: '17', length: '11.5' },
-                            { size: '18', length: '12.0' },
-                            { size: '19', length: '12.5' },
-                            { size: '20', length: '13.0' },
-                            { size: '21', length: '13.5' },
-                            { size: '22', length: '14.0' },
-                            { size: '23', length: '14.5' },
-                            { size: '24', length: '15.0' },
-                          ].map((s, idx) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                              <td style={{ padding: '8px', fontWeight: 600 }}>{s.size}</td>
-                              <td style={{ padding: '8px' }}>{s.length}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px', textAlign: 'left' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                            <th style={{ padding: '8px' }}>Age/Size</th>
-                            <th style={{ padding: '8px' }}>Height (cm)</th>
-                            <th style={{ padding: '8px' }}>Chest (cm)</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {[
-                            { size: '0-3 Months (NB)', height: '56-62', chest: '43' },
-                            { size: '3-6 Months', height: '62-68', chest: '45' },
-                            { size: '6-9 Months', height: '68-74', chest: '47' },
-                            { size: '9-12 Months', height: '74-80', chest: '49' },
-                            { size: '1-2 Years', height: '86-92', chest: '53' },
-                            { size: '3-4 Years', height: '98-104', chest: '57' },
-                            { size: '5-6 Years', height: '110-116', chest: '61' },
-                            { size: '7-8 Years', height: '122-128', chest: '66' },
-                          ].map((s, idx) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                              <td style={{ padding: '8px', fontWeight: 600 }}>{s.size}</td>
-                              <td style={{ padding: '8px' }}>{s.height}</td>
-                              <td style={{ padding: '8px' }}>{s.chest}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
           )}
 
