@@ -131,40 +131,8 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
     `.trim();
 
     try {
-      const res = await fetch('/api/order', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          customerName: `${form.firstName} ${form.lastName}`,
-          phone: form.phone,
-          email: form.email,
-          address: `${form.address}, ${form.city}, ${form.province}`,
-          paymentMethod: 'Cash on Delivery',
-          items: cartItems,
-          subtotal,
-          deliveryFee,
-          total,
-          notes: form.notes,
-          orderText,
-        }),
-      });
-
-      // Safely parse response — guard against HTML error pages (e.g. server not running)
-      const contentType = res.headers.get('content-type') || '';
-      const isJson = contentType.includes('application/json');
-      const body = isJson ? await res.json() : await res.text();
-
-      if (!res.ok) {
-        const message = isJson
-          ? (body as { error?: string }).error || 'Failed to place order.'
-          : 'Could not reach the server. Please make sure the backend is running.';
-        throw new Error(message);
-      }
-
-      setCompletedStats({ total, totalItems });
-
-      const orderRef = isJson && (body as { orderRef?: string }).orderRef ? (body as { orderRef?: string }).orderRef! : `ZW-${Date.now().toString(36).toUpperCase()}`;
-
+      const orderRef = `ZW-${Date.now().toString(36).toUpperCase()}`;
+      
       const newOrder: Order = {
         id: orderRef,
         customerName: `${form.firstName} ${form.lastName}`,
@@ -182,13 +150,37 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         orderDate: new Date().toISOString().split('T')[0]
       };
 
-      // Fire off Supabase inserts
-      addOrderToSupabase(newOrder).catch(e => console.error(e));
+      // 1. Save to Supabase (primary database)
+      try {
+        await addOrderToSupabase(newOrder);
+      } catch (e) {
+        console.error("Supabase insert failed, falling back to local storage:", e);
+      }
+      
+      // 2. Update local storage (for admin panel fallback if Supabase fails)
+      const existing = await loadOrders();
+      saveOrders([newOrder, ...existing]);
 
-      // Update local storage for admin panel fallback
-      loadOrders().then(existing => {
-        saveOrders([newOrder, ...existing]);
-      });
+      setCompletedStats({ total, totalItems });
+
+      // 3. Try to send email via backend (non-blocking)
+      fetch('/api/order', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          customerName: `${form.firstName} ${form.lastName}`,
+          phone: form.phone,
+          email: form.email,
+          address: `${form.address}, ${form.city}, ${form.province}`,
+          paymentMethod: 'Cash on Delivery',
+          items: cartItems,
+          subtotal,
+          deliveryFee,
+          total,
+          notes: form.notes,
+          orderText,
+        }),
+      }).catch(err => console.warn('Backend email notification failed:', err));
 
       clearCart();
       setStep('success');
