@@ -172,6 +172,24 @@ export const updateOrderDetails = async (
   }
 };
 
+export const deleteOrder = async (orderId: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .delete()
+      .eq('id', orderId);
+
+    if (error) {
+      console.error('Error deleting order in Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Exception deleting order:', err);
+    return false;
+  }
+};
+
 // ─── LEGACY: localStorage fallback (kept for safety, no longer used as primary) ───
 export const saveOrders = (orders: Order[]) => {
   localStorage.setItem('zeero_wear_orders', JSON.stringify(orders));

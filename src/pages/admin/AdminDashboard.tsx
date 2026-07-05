@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import type { Product } from '../../data/products';
-import { loadOrders, updateOrderStatus, updateOrderDetails, bulkUpdateOrderStatus, type Order, type OrderEditFields } from '../../data/orders';
+import { loadOrders, updateOrderStatus, updateOrderDetails, bulkUpdateOrderStatus, deleteOrder, type Order, type OrderEditFields } from '../../data/orders';
 import { loadSizes, addSizeToDb, deleteSizeFromDb } from '../../data/sizes';
 import { loadQueries, updateQueryStatus, type Query } from '../../data/queries';
 import { uploadImageToB2 } from '../../lib/b2Upload';
@@ -500,6 +500,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
     } else {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: orderToCancel.status } : o));
       showOrderMsg('error', `Failed to cancel order ${orderId}. Please try again.`);
+    }
+  };
+
+  const handleDeleteOrder = async (orderId: string) => {
+    if (!confirm('WARNING: Are you sure you want to completely DELETE this order? This cannot be undone.')) return;
+
+    setOrderActionLoading(orderId);
+
+    // Optimistic UI
+    const previousOrders = [...orders];
+    setOrders(prev => prev.filter(o => o.id !== orderId));
+
+    const ok = await deleteOrder(orderId);
+    setOrderActionLoading(null);
+
+    if (ok) {
+      showOrderMsg('success', `Order ${orderId} deleted permanently.`);
+    } else {
+      setOrders(previousOrders);
+      showOrderMsg('error', `Failed to delete order ${orderId}. Please try again.`);
     }
   };
 
@@ -1767,6 +1787,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                               : <><i className="fas fa-redo"></i> Re-Approve</>}
                           </button>
                         )}
+                        <button
+                          onClick={() => handleDeleteOrder(order.id)}
+                          disabled={orderActionLoading === order.id}
+                          className="order-action-btn delete-btn"
+                          style={{
+                            padding: '10px 16px',
+                            borderRadius: '8px',
+                            border: '1px solid #ff3b30',
+                            background: 'transparent',
+                            color: '#ff3b30',
+                            fontWeight: 700,
+                            fontSize: '13px',
+                            cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '6px',
+                            transition: 'all 0.2s ease',
+                            opacity: orderActionLoading === order.id ? 0.7 : 1
+                          }}
+                          onMouseOver={(e) => {
+                            e.currentTarget.style.background = '#ff3b30';
+                            e.currentTarget.style.color = '#fff';
+                          }}
+                          onMouseOut={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = '#ff3b30';
+                          }}
+                        >
+                          {orderActionLoading === order.id ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-trash-alt"></i>}
+                        </button>
                       </div>
                     </div>
                   );
