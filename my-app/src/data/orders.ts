@@ -59,23 +59,23 @@ export const loadOrders = async (): Promise<Order[]> => {
       console.error('Error fetching orders from Supabase:', error);
       const localData = localStorage.getItem('zeero_wear_orders');
       if (localData) return JSON.parse(localData);
-      return INITIAL_ORDERS;
+      return []; // Return empty if error and no local data
     }
 
-    if (data && data.length > 0) {
+    if (data) {
       return data as Order[];
     }
   } catch (err) {
     console.error('Exception fetching orders:', err);
   }
 
-  // Fallback to localStorage if Supabase returns empty
+  // Fallback to localStorage if Supabase fails completely
   const localData = localStorage.getItem('zeero_wear_orders');
   if (localData) {
     return JSON.parse(localData);
   }
 
-  return INITIAL_ORDERS;
+  return [];
 };
 
 // ─── INSERT NEW ORDER ───
