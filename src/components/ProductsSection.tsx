@@ -51,7 +51,7 @@ const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist,
 
   const filteredProducts = products
     .filter(p => p.categories?.includes(activeTab))
-    .slice(0, 3);
+    .slice(0, 4);
 
   if (categories.length === 0) return null;
 
