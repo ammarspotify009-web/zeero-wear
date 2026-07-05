@@ -40,6 +40,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const [availableSizes, setAvailableSizes] = useState<string[]>(['NB', '0-3M', '3-6M', '6-9M', '1Y', '2Y', '3-4Y', '5-6Y', '7-8Y', '17', '18', '20', '32', '33', '34']);
   const [badge, setBadge] = useState<Product['badge']>('none');
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
+  const [expandedParents, setExpandedParents] = useState<string[]>([]);
 
   // B2 Upload State
   const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null]);
@@ -1025,40 +1026,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                     position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
                     marginTop: '4px', background: '#fff', border: '1px solid var(--border)',
                     borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
-                    maxHeight: '300px', overflowY: 'auto', padding: '12px'
+                    maxHeight: '340px', overflowY: 'auto', padding: '8px'
                   }}>
-                    {categories.filter(c => !c.parentId).map(parent => (
-                      <div key={parent.id} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, color: 'var(--dark)' }}>
-                          <input 
-                            type="checkbox" 
-                            style={{ width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
-                            checked={selectedCategories.includes(parent.id)} 
-                            onChange={(e) => {
-                              if (e.target.checked) setSelectedCategories([...selectedCategories, parent.id]);
-                              else setSelectedCategories(selectedCategories.filter(c => c !== parent.id));
-                            }}
-                          />
-                          {parent.name}
-                        </label>
-                        <div style={{ paddingLeft: '24px', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
-                          {categories.filter(c => c.parentId === parent.id).map(child => (
-                            <label key={child.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13.5px', color: 'var(--text)' }}>
-                              <input 
-                                type="checkbox" 
-                                style={{ width: '14px', height: '14px', margin: 0, cursor: 'pointer' }}
-                                checked={selectedCategories.includes(child.id)} 
-                                onChange={(e) => {
-                                  if (e.target.checked) setSelectedCategories([...selectedCategories, child.id]);
-                                  else setSelectedCategories(selectedCategories.filter(c => c !== child.id));
-                                }}
-                              />
-                              {child.name}
-                            </label>
-                          ))}
+                    {categories.filter(c => !c.parentId).map(parent => {
+                      const children = categories.filter(c => c.parentId === parent.id);
+                      const isExpanded = expandedParents.includes(parent.id);
+                      return (
+                        <div key={parent.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          {/* Parent row */}
+                          <div style={{ display: 'flex', alignItems: 'center', padding: '10px 8px', gap: '8px' }}>
+                            <input
+                              type="checkbox"
+                              style={{ width: '16px', height: '16px', margin: 0, cursor: 'pointer', flexShrink: 0 }}
+                              checked={selectedCategories.includes(parent.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) setSelectedCategories([...selectedCategories, parent.id]);
+                                else setSelectedCategories(selectedCategories.filter(c => c !== parent.id));
+                              }}
+                            />
+                            <span style={{ flex: 1, fontWeight: 600, fontSize: '14px', color: 'var(--dark)', cursor: 'default' }}>
+                              {parent.name}
+                            </span>
+                            {children.length > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => setExpandedParents(isExpanded
+                                  ? expandedParents.filter(id => id !== parent.id)
+                                  : [...expandedParents, parent.id]
+                                )}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '4px 8px', color: 'var(--text-light)', fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px' }}
+                              >
+                                <span style={{ fontSize: '11px' }}>{children.length} sub</span>
+                                <i className={`fas fa-chevron-${isExpanded ? 'up' : 'down'}`}></i>
+                              </button>
+                            )}
+                          </div>
+                          {/* Subcategories — only shown when expanded */}
+                          {isExpanded && children.length > 0 && (
+                            <div style={{ paddingLeft: '28px', paddingBottom: '8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                              {children.map(child => (
+                                <label key={child.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13.5px', color: 'var(--text)' }}>
+                                  <input
+                                    type="checkbox"
+                                    style={{ width: '14px', height: '14px', margin: 0, cursor: 'pointer' }}
+                                    checked={selectedCategories.includes(child.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) setSelectedCategories([...selectedCategories, child.id]);
+                                      else setSelectedCategories(selectedCategories.filter(c => c !== child.id));
+                                    }}
+                                  />
+                                  {child.name}
+                                </label>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 )}
                 
