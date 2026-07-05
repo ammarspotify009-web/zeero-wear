@@ -1098,15 +1098,22 @@
 @media (max-width: 820px) {
   .checkout-page {
     padding-top: 8px;
+    overflow-x: hidden;
+    width: 100%;
+    box-sizing: border-box;
   }
   .checkout-layout {
     grid-template-columns: 1fr;
     margin-top: 16px;
-    padding: 0 12px;
-    gap: 20px;
+    padding: 0 10px;
+    gap: 16px;
+    width: 100%;
+    box-sizing: border-box;
   }
   .checkout-summary-card {
     order: -1;
+    width: 100%;
+    box-sizing: border-box;
   }
 }
 
@@ -1245,6 +1252,9 @@
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 24px;
+  overflow: hidden;
+  box-sizing: border-box;
+  width: 100%;
 }
 .order-summary-inner h3 {
   font-size: 16px;
@@ -1286,10 +1296,10 @@
   align-items: center;
   justify-content: center;
 }
-.summary-item-info { flex: 1; min-width: 0; }
+.summary-item-info { flex: 1; min-width: 0; overflow: hidden; }
 .summary-item-name { font-size: 13px; font-weight: 600; color: var(--dark); display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .summary-item-size { font-size: 11px; color: var(--text-light); }
-.summary-item-price { font-size: 13px; font-weight: 700; color: var(--dark); white-space: nowrap; }
+.summary-item-price { font-size: 13px; font-weight: 700; color: var(--dark); white-space: nowrap; flex-shrink: 0; padding-left: 8px; }
 .summary-divider { height: 1px; background: var(--border); margin: 12px 0; }
 .summary-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; margin-bottom: 8px; }
 .summary-row span:first-child { color: var(--text-light); }
@@ -1297,7 +1307,7 @@
 .summary-total { font-size: 17px; font-weight: 700; }
 .summary-total span { color: var(--primary) !important; font-weight: 800; }
 .free-tag { background: var(--success); color: #fff; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 20px; }
-.free-delivery-hint { font-size: 11px; color: var(--accent2); text-align: right; margin-top: -4px; margin-bottom: 8px; }
+.free-delivery-hint { font-size: 11px; color: var(--accent2); text-align: right; margin-top: -4px; margin-bottom: 8px; word-break: break-word; white-space: normal; }
 
 /* ── Confirm Step ── */
 .confirm-section {
