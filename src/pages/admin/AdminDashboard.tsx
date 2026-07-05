@@ -39,6 +39,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const [sizeInput, setSizeInput] = useState('');
   const [availableSizes, setAvailableSizes] = useState<string[]>(['NB', '0-3M', '3-6M', '6-9M', '1Y', '2Y', '3-4Y', '5-6Y', '7-8Y', '17', '18', '20', '32', '33', '34']);
   const [badge, setBadge] = useState<Product['badge']>('none');
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
   // B2 Upload State
   const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null]);
@@ -997,42 +998,92 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                 </div>
               )}
 
-              <div className="form-group">
+              <div className="form-group" style={{ position: 'relative' }}>
                 <label>Categories * (Select one or more)</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '8px', padding: '12px', border: '1px solid var(--border)', borderRadius: '8px', background: '#f8fafc', maxHeight: '200px', overflowY: 'auto' }}>
-                  {categories.filter(c => !c.parentId).map(parent => (
-                    <div key={parent.id} style={{ gridColumn: '1 / -1', marginTop: '8px', marginBottom: '4px' }}>
-                      <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, color: 'var(--dark)', width: 'fit-content' }}>
-                        <input 
-                          type="checkbox" 
-                          style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
-                          checked={selectedCategories.includes(parent.id)} 
-                          onChange={(e) => {
-                            if (e.target.checked) setSelectedCategories([...selectedCategories, parent.id]);
-                            else setSelectedCategories(selectedCategories.filter(c => c !== parent.id));
-                          }}
-                        />
-                        {parent.name}
-                      </label>
-                      <div style={{ paddingLeft: '24px', display: 'flex', flexDirection: 'column', gap: '4px', marginTop: '4px' }}>
-                        {categories.filter(c => c.parentId === parent.id).map(child => (
-                          <label key={child.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13px', color: 'var(--text)', width: 'fit-content' }}>
-                            <input 
-                              type="checkbox" 
-                              style={{ width: 'auto', margin: 0, cursor: 'pointer' }}
-                              checked={selectedCategories.includes(child.id)} 
-                              onChange={(e) => {
-                                if (e.target.checked) setSelectedCategories([...selectedCategories, child.id]);
-                                else setSelectedCategories(selectedCategories.filter(c => c !== child.id));
-                              }}
-                            />
-                            {child.name}
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                
+                {/* Custom Dropdown Toggle */}
+                <div 
+                  onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
+                  style={{
+                    width: '100%', padding: '12px 16px', border: '1px solid var(--border)', 
+                    borderRadius: '8px', background: '#fff', cursor: 'pointer',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                    fontSize: '14px', color: selectedCategories.length ? 'var(--dark)' : 'var(--text-light)'
+                  }}
+                >
+                  <span>
+                    {selectedCategories.length === 0 
+                      ? 'Select categories...' 
+                      : `${selectedCategories.length} categories selected`}
+                  </span>
+                  <i className={`fas fa-chevron-${isCategoryDropdownOpen ? 'up' : 'down'}`}></i>
                 </div>
+
+                {/* Dropdown Menu */}
+                {isCategoryDropdownOpen && (
+                  <div style={{
+                    position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 10,
+                    marginTop: '4px', background: '#fff', border: '1px solid var(--border)',
+                    borderRadius: '8px', boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                    maxHeight: '300px', overflowY: 'auto', padding: '12px'
+                  }}>
+                    {categories.filter(c => !c.parentId).map(parent => (
+                      <div key={parent.id} style={{ marginBottom: '12px', paddingBottom: '12px', borderBottom: '1px solid #f1f5f9' }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 600, color: 'var(--dark)' }}>
+                          <input 
+                            type="checkbox" 
+                            style={{ width: '16px', height: '16px', margin: 0, cursor: 'pointer' }}
+                            checked={selectedCategories.includes(parent.id)} 
+                            onChange={(e) => {
+                              if (e.target.checked) setSelectedCategories([...selectedCategories, parent.id]);
+                              else setSelectedCategories(selectedCategories.filter(c => c !== parent.id));
+                            }}
+                          />
+                          {parent.name}
+                        </label>
+                        <div style={{ paddingLeft: '24px', display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '8px' }}>
+                          {categories.filter(c => c.parentId === parent.id).map(child => (
+                            <label key={child.id} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontSize: '13.5px', color: 'var(--text)' }}>
+                              <input 
+                                type="checkbox" 
+                                style={{ width: '14px', height: '14px', margin: 0, cursor: 'pointer' }}
+                                checked={selectedCategories.includes(child.id)} 
+                                onChange={(e) => {
+                                  if (e.target.checked) setSelectedCategories([...selectedCategories, child.id]);
+                                  else setSelectedCategories(selectedCategories.filter(c => c !== child.id));
+                                }}
+                              />
+                              {child.name}
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {/* Selected Tags Display */}
+                {selectedCategories.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '12px' }}>
+                    {selectedCategories.map(catId => {
+                      const catName = categories.find(c => c.id === catId)?.name || catId;
+                      return (
+                        <span key={catId} style={{
+                          background: 'var(--primary-light)', color: 'var(--primary-dark)',
+                          padding: '4px 10px', borderRadius: '20px', fontSize: '12px',
+                          display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600
+                        }}>
+                          {catName}
+                          <i 
+                            className="fas fa-times" 
+                            style={{ cursor: 'pointer', opacity: 0.6 }}
+                            onClick={() => setSelectedCategories(selectedCategories.filter(id => id !== catId))}
+                          ></i>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="form-group">
