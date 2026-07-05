@@ -46,17 +46,31 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   }, []);
 
 
-  const [form, setForm] = useState<FormData>({
-    firstName: '',
-    lastName: '',
-    phone: '',
-    email: '',
-    address: '',
-    city: '',
-    province: '',
-    notes: '',
-    paymentMethod: 'cod' as const,
+  const [form, setForm] = useState<FormData>(() => {
+    const saved = localStorage.getItem('zeero_wear_checkout_form');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        // ignore JSON parse error
+      }
+    }
+    return {
+      firstName: '',
+      lastName: '',
+      phone: '',
+      email: '',
+      address: '',
+      city: '',
+      province: '',
+      notes: '',
+      paymentMethod: 'cod' as const,
+    };
   });
+
+  React.useEffect(() => {
+    localStorage.setItem('zeero_wear_checkout_form', JSON.stringify(form));
+  }, [form]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
@@ -183,6 +197,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
       }).catch(err => console.warn('Backend email notification failed:', err));
 
       clearCart();
+      localStorage.removeItem('zeero_wear_checkout_form');
       setStep('success');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');

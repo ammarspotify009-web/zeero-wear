@@ -26,8 +26,22 @@ const ProtectedAdminRoute = ({ children }: { children: React.ReactNode }) => {
 function AppContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [wishlistItems, setWishlistItems] = useState<Product[]>([]);
+  const [cartItems, setCartItems] = useState<CartItem[]>(() => {
+    const saved = localStorage.getItem('zeero_wear_cart');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [wishlistItems, setWishlistItems] = useState<Product[]>(() => {
+    const saved = localStorage.getItem('zeero_wear_wishlist');
+    return saved ? JSON.parse(saved) : [];
+  });
+  
+  useEffect(() => {
+    localStorage.setItem('zeero_wear_cart', JSON.stringify(cartItems));
+  }, [cartItems]);
+
+  useEffect(() => {
+    localStorage.setItem('zeero_wear_wishlist', JSON.stringify(wishlistItems));
+  }, [wishlistItems]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
