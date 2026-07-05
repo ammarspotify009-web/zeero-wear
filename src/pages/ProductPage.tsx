@@ -150,20 +150,6 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
             )}
           </div>
 
-          <div style={{ borderBottom: '1.5px solid var(--border)', paddingBottom: '24px', marginBottom: '24px' }}>
-            <h3 style={{ fontSize: '15px', color: 'var(--dark)', fontWeight: 700, marginBottom: '8px' }}>Description</h3>
-            <p style={{ color: 'var(--text-light)', fontSize: '14.5px', lineHeight: 1.6, margin: 0 }}>
-              {isDescriptionExpanded ? product.description : (product.description.length > 150 ? `${product.description.substring(0, 150)}...` : product.description)}
-            </p>
-            {product.description.length > 150 && (
-              <button 
-                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, padding: 0, marginTop: '8px', cursor: 'pointer', fontSize: '13px' }}
-              >
-                {isDescriptionExpanded ? 'Read Less' : 'Read More'}
-              </button>
-            )}
-          </div>
 
           {product.sizes && product.sizes.length > 0 && (
             <div style={{ marginBottom: '32px' }}>
@@ -238,6 +224,21 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
             >
               <i className={`${isWishlisted ? 'fas' : 'far'} fa-heart`}></i>
             </button>
+          </div>
+
+          <div style={{ marginTop: '24px', borderTop: '1.5px solid var(--border)', paddingTop: '24px' }}>
+            <h3 style={{ fontSize: '15px', color: 'var(--dark)', fontWeight: 700, marginBottom: '8px' }}>Description</h3>
+            <p style={{ color: 'var(--text-light)', fontSize: '14.5px', lineHeight: 1.6, margin: 0 }}>
+              {isDescriptionExpanded ? product.description : (product.description.length > 150 ? `${product.description.substring(0, 150)}...` : product.description)}
+            </p>
+            {product.description.length > 150 && (
+              <button 
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, padding: 0, marginTop: '8px', cursor: 'pointer', fontSize: '13px' }}
+              >
+                {isDescriptionExpanded ? 'Read Less' : 'Read More'}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1,3 +1,5 @@
+import { supabase } from '../lib/supabase';
+
 export interface Category {
   id: string; // The slug, e.g. 'baby-boy'
   name: string; // Display name, e.g. 'Baby Boy Collection'
@@ -36,39 +38,83 @@ const DEFAULT_CATEGORIES: Category[] = [
   { id: 'bestsellers', name: 'Best Sellers', parentId: null, showInSidebar: true, order: 12, badge: 'Premium Quality', badgeColor: 'badge-red' },
 ];
 
-export const loadCategories = (): Category[] => {
+export const loadCategories = async (): Promise<Category[]> => {
   try {
-    const stored = localStorage.getItem('zeero_categories');
-    if (stored) {
-      return JSON.parse(stored);
+    const { data, error } = await supabase.from('categories').select('*').order('sort_order', { ascending: true });
+    if (error) {
+      console.error("Error loading categories from Supabase", error);
+      return DEFAULT_CATEGORIES;
     }
-  } catch (e) {
-    console.error("Failed to load categories from local storage", e);
+    if (data && data.length > 0) {
+      return data.map(c => ({
+        id: c.id,
+        name: c.name,
+        parentId: c.parent_id,
+        showInSidebar: c.show_in_sidebar,
+        order: c.sort_order,
+        badge: c.badge || undefined,
+        badgeColor: c.badge_color || undefined
+      }));
+    }
+  } catch (err) {
+    console.error("Failed to load categories from Supabase", err);
   }
-  // If not in local storage, save the defaults and return them
-  saveCategories(DEFAULT_CATEGORIES);
   return DEFAULT_CATEGORIES;
 };
 
-export const saveCategories = (categories: Category[]) => {
+export const addCategory = async (category: Category): Promise<boolean> => {
   try {
-    localStorage.setItem('zeero_categories', JSON.stringify(categories));
-  } catch (e) {
-    console.error("Failed to save categories to local storage", e);
+    const { error } = await supabase.from('categories').insert([{
+      id: category.id,
+      name: category.name,
+      parent_id: category.parentId,
+      show_in_sidebar: category.showInSidebar,
+      sort_order: category.order,
+      badge: category.badge || null,
+      badge_color: category.badgeColor || null
+    }]);
+    if (error) {
+      console.error('Error adding category:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Exception adding category:', err);
+    return false;
   }
 };
 
-export const addCategory = (category: Category) => {
-  const current = loadCategories();
-  saveCategories([...current, category]);
+export const updateCategory = async (category: Category): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from('categories').update({
+      name: category.name,
+      parent_id: category.parentId,
+      show_in_sidebar: category.showInSidebar,
+      sort_order: category.order,
+      badge: category.badge || null,
+      badge_color: category.badgeColor || null
+    }).eq('id', category.id);
+    if (error) {
+      console.error('Error updating category:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Exception updating category:', err);
+    return false;
+  }
 };
 
-export const updateCategory = (updated: Category) => {
-  const current = loadCategories();
-  saveCategories(current.map(c => c.id === updated.id ? updated : c));
-};
-
-export const deleteCategory = (id: string) => {
-  const current = loadCategories();
-  saveCategories(current.filter(c => c.id !== id));
+export const deleteCategory = async (id: string): Promise<boolean> => {
+  try {
+    const { error } = await supabase.from('categories').delete().eq('id', id);
+    if (error) {
+      console.error('Error deleting category:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Exception deleting category:', err);
+    return false;
+  }
 };

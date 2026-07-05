@@ -19,7 +19,7 @@ const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategor
   const [badge, setBadge] = useState('');
   const [badgeColor, setBadgeColor] = useState('badge-teal');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!id || !name) {
       alert("Category ID (slug) and Name are required.");
@@ -38,7 +38,11 @@ const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategor
 
     let updatedCategories: Category[];
     if (editingId) {
-      updateCategory(newCategory);
+      const success = await updateCategory(newCategory);
+      if (!success) {
+        alert("Failed to update category in database.");
+        return;
+      }
       updatedCategories = categories.map(c => c.id === newCategory.id ? newCategory : c);
       alert(`Category "${name}" updated successfully!`);
     } else {
@@ -47,7 +51,11 @@ const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategor
         alert("A category with this ID already exists. Please choose a unique slug.");
         return;
       }
-      addCategory(newCategory);
+      const success = await addCategory(newCategory);
+      if (!success) {
+        alert("Failed to add category to database.");
+        return;
+      }
       updatedCategories = [...categories, newCategory];
       alert(`Category "${name}" added successfully!`);
     }
@@ -67,9 +75,13 @@ const AdminCategories: React.FC<AdminCategoriesProps> = ({ categories, onCategor
     setBadgeColor(category.badgeColor || 'badge-teal');
   };
 
-  const handleDelete = (categoryId: string) => {
+  const handleDelete = async (categoryId: string) => {
     if (confirm("Are you sure you want to delete this category? Sub-categories and products assigned to this category might be affected.")) {
-      deleteCategory(categoryId);
+      const success = await deleteCategory(categoryId);
+      if (!success) {
+        alert("Failed to delete category from database.");
+        return;
+      }
       onCategoriesChange(categories.filter(c => c.id !== categoryId));
     }
   };

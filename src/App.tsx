@@ -35,12 +35,14 @@ function AppContent() {
   useEffect(() => {
     const fetchProducts = async () => {
       const data = await loadProducts();
-      // Sort to show newest first, assuming data comes back unsorted or we want a specific order.
-      // We can just set it directly.
       setProducts(data);
     };
+    const fetchCategories = async () => {
+      const cats = await loadCategories();
+      setCategories(cats);
+    };
     fetchProducts();
-    setCategories(loadCategories());
+    fetchCategories();
   }, []);
 
   const handleAddProduct = async (newProd: Product) => {

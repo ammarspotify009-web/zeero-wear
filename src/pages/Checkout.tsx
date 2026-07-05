@@ -8,7 +8,7 @@ type CheckoutProps = {
   clearCart: () => void;
 };
 
-const DELIVERY_FEE = 250;
+const DELIVERY_FEE = 200;
 const FREE_DELIVERY_THRESHOLD = 3000;
 
 type FormData = {
@@ -162,9 +162,9 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
       }
 
       setCompletedStats({ total, totalItems });
-      
+
       const orderRef = isJson && (body as { orderRef?: string }).orderRef ? (body as { orderRef?: string }).orderRef! : `ZW-${Date.now().toString(36).toUpperCase()}`;
-      
+
       const newOrder: Order = {
         id: orderRef,
         customerName: `${form.firstName} ${form.lastName}`,
@@ -184,7 +184,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
       // Fire off Supabase inserts
       addOrderToSupabase(newOrder).catch(e => console.error(e));
-      
+
       // Update local storage for admin panel fallback
       loadOrders().then(existing => {
         saveOrders([newOrder, ...existing]);
