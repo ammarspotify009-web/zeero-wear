@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import type { Product } from '../../data/products';
-import { loadOrders, updateOrderStatus, updateOrderDetails, type Order, type OrderEditFields } from '../../data/orders';
+import { loadOrders, updateOrderStatus, updateOrderDetails, bulkUpdateOrderStatus, type Order, type OrderEditFields } from '../../data/orders';
 import { loadSizes, addSizeToDb, deleteSizeFromDb } from '../../data/sizes';
 import { loadQueries, updateQueryStatus, type Query } from '../../data/queries';
 import { uploadImageToB2 } from '../../lib/b2Upload';
@@ -55,6 +55,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const [orderActionLoading, setOrderActionLoading] = useState<string | null>(null); // stores orderId being acted on
   const [orderActionMsg, setOrderActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('All');
+  const [orderDateFilter, setOrderDateFilter] = useState<string>(''); // For calendar filter
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]); // For bulk actions
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editSaving, setEditSaving] = useState(false);
   const [editForm, setEditForm] = useState<OrderEditFields>({
@@ -140,7 +142,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const todaysComplete = todaysOrdersList.filter(o => o.status === 'Approved').length;
 
   // Filtered orders
-  const filteredOrders = orderFilter === 'All' ? orders : orders.filter(o => o.status === orderFilter);
+  const filteredOrders = orders.filter(o => {
+    const matchesStatus = orderFilter === 'All' || o.status === orderFilter;
+    const matchesDate = !orderDateFilter || o.orderDate === orderDateFilter;
+    return matchesStatus && matchesDate;
+  });
 
   const handleAddImageField = (index: number, val: string) => {
     const newImages = [...images];
@@ -373,6 +379,74 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
 
   // ─── ORDER HANDLERS ───
+  const handleToggleOrderSelection = (id: string) => {
+    setSelectedOrderIds(prev => 
+      prev.includes(id) ? prev.filter(orderId => orderId !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAllOrders = () => {
+    if (selectedOrderIds.length === filteredOrders.length) {
+      setSelectedOrderIds([]); // Deselect all if all are selected
+    } else {
+      setSelectedOrderIds(filteredOrders.map(o => o.id)); // Select all currently filtered
+    }
+  };
+
+  const handleBulkApprove = async () => {
+    if (!selectedOrderIds.length) return;
+    const pendingIds = orders.filter(o => selectedOrderIds.includes(o.id) && o.status === 'Pending').map(o => o.id);
+    if (!pendingIds.length) {
+      showOrderMsg('error', 'No pending orders selected to approve.');
+      return;
+    }
+    setOrderActionLoading('bulk-approve');
+    const success = await bulkUpdateOrderStatus(pendingIds, 'Approved');
+    if (success) {
+      showOrderMsg('success', `${pendingIds.length} orders approved!`);
+      setSelectedOrderIds([]);
+      refreshOrders();
+    } else {
+      showOrderMsg('error', 'Failed to bulk approve orders.');
+    }
+    setOrderActionLoading(null);
+  };
+
+  const handleDownloadCSV = () => {
+    if (!selectedOrderIds.length) return;
+    
+    const selectedOrders = orders.filter(o => selectedOrderIds.includes(o.id));
+    const headers = ['Order ID', 'Date', 'Customer Name', 'Phone', 'City', 'Address', 'Status', 'Product Details', 'Subtotal', 'Delivery Fee', 'Total Amount', 'Notes'];
+    
+    const rows = selectedOrders.map(o => {
+      const productDetails = o.items.map(item => `${item.name} (${item.size}) x${item.quantity}`).join(' | ');
+      return [
+        o.id,
+        o.orderDate,
+        `"${o.customerName}"`,
+        `'${o.customerPhone}`, // Add quote to prevent Excel from treating it as a number
+        `"${o.city}"`,
+        `"${o.customerAddress}"`,
+        o.status,
+        `"${productDetails}"`,
+        o.subtotal,
+        o.deliveryFee,
+        o.totalAmount,
+        `"${o.notes || ''}"`
+      ];
+    });
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `selected_orders_${Date.now()}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   const showOrderMsg = (type: 'success' | 'error', text: string) => {
     setOrderActionMsg({ type, text });
     setTimeout(() => setOrderActionMsg(null), 3500);
@@ -1430,6 +1504,54 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
               })}
             </div>
 
+            {/* BULK ACTIONS & DATE FILTER BAR */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginBottom: '24px', background: '#fff', padding: '16px 20px', borderRadius: '12px', border: '1px solid var(--border)' }}>
+              {/* Date Filter */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: 'auto' }}>
+                <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-light)' }}>
+                  <i className="fas fa-calendar-alt" style={{ marginRight: '6px' }}></i> Filter by Date:
+                </label>
+                <input 
+                  type="date" 
+                  value={orderDateFilter}
+                  onChange={(e) => setOrderDateFilter(e.target.value)}
+                  style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border)', fontSize: '13px', outline: 'none' }}
+                />
+                {orderDateFilter && (
+                  <button onClick={() => setOrderDateFilter('')} style={{ background: 'none', border: 'none', color: '#ff3b30', cursor: 'pointer', fontSize: '13px', padding: '4px' }} title="Clear Date Filter">
+                    <i className="fas fa-times"></i>
+                  </button>
+                )}
+              </div>
+
+              {/* Bulk Actions */}
+              <button
+                onClick={handleSelectAllOrders}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border)', background: '#f8fafc', color: 'var(--dark)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', transition: '0.2s' }}
+              >
+                {selectedOrderIds.length === filteredOrders.length && filteredOrders.length > 0 ? 'Deselect All' : 'Select All'}
+              </button>
+
+              <button
+                onClick={handleDownloadCSV}
+                disabled={selectedOrderIds.length === 0}
+                style={{ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--primary)', background: '#fff', color: 'var(--primary)', fontWeight: 600, fontSize: '13px', cursor: selectedOrderIds.length === 0 ? 'not-allowed' : 'pointer', opacity: selectedOrderIds.length === 0 ? 0.5 : 1, transition: '0.2s' }}
+              >
+                <i className="fas fa-download" style={{ marginRight: '6px' }}></i> Download CSV ({selectedOrderIds.length})
+              </button>
+
+              {orders.filter(o => selectedOrderIds.includes(o.id) && o.status === 'Pending').length > 0 && (
+                <button
+                  onClick={handleBulkApprove}
+                  disabled={orderActionLoading === 'bulk-approve'}
+                  style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--success)', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: orderActionLoading === 'bulk-approve' ? 'not-allowed' : 'pointer', opacity: orderActionLoading === 'bulk-approve' ? 0.7 : 1, transition: '0.2s' }}
+                >
+                  <i className={`fas ${orderActionLoading === 'bulk-approve' ? 'fa-spinner fa-spin' : 'fa-check-double'}`} style={{ marginRight: '6px' }}></i> 
+                  Approve Selected
+                </button>
+              )}
+            </div>
+
             {/* ORDER CARDS GRID */}
             {filteredOrders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '60px 20px', background: '#fff', borderRadius: '16px', border: '1px solid var(--border)' }}>
@@ -1456,10 +1578,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                         justifyContent: 'space-between',
                         alignItems: 'center',
                         padding: '16px 20px',
-                        background: '#f8fafc',
+                        background: selectedOrderIds.includes(order.id) ? 'rgba(44, 62, 107, 0.04)' : '#f8fafc',
                         borderBottom: '1px solid var(--border)'
                       }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={selectedOrderIds.includes(order.id)}
+                            onChange={() => handleToggleOrderSelection(order.id)}
+                            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                          />
                           <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--primary)' }}>{order.id}</span>
                           <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>{order.orderDate}</span>
                         </div>

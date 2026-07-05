@@ -118,6 +118,29 @@ export const updateOrderStatus = async (
   }
 };
 
+// ─── BULK UPDATE ORDER STATUS ───
+export const bulkUpdateOrderStatus = async (
+  orderIds: string[],
+  status: 'Pending' | 'Approved' | 'Cancelled'
+): Promise<boolean> => {
+  if (!orderIds.length) return true;
+  try {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status })
+      .in('id', orderIds);
+
+    if (error) {
+      console.error('Error bulk updating orders in Supabase:', error);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('Exception bulk updating orders:', err);
+    return false;
+  }
+};
+
 // ─── UPDATE ORDER DETAILS (Edit Modal) ───
 export type OrderEditFields = {
   customerName: string;
