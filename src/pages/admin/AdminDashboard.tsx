@@ -497,6 +497,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
     if (ok) {
       showOrderMsg('success', `Order ${orderId} cancelled.`);
+      // Send cancellation email if customer provided one
+      if (orderToCancel.customerEmail && orderToCancel.customerEmail.trim() !== '') {
+        fetch('/api/admin/cancel-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ order: orderToCancel }),
+        }).catch(err => console.error('Failed to send cancellation email', err));
+      }
     } else {
       setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: orderToCancel.status } : o));
       showOrderMsg('error', `Failed to cancel order ${orderId}. Please try again.`);
