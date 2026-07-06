@@ -15,7 +15,7 @@ const policies: Record<string, { title: string; content: React.ReactNode }> = {
         <h3>Shipping Charges</h3>
         <ul>
           <li>Free shipping on all orders above <strong>PKR 3,000</strong></li>
-          <li>Flat rate: PKR 200 delivery fee all across Pakistan</li>
+          <li>Flat rate: PKR 199 delivery fee all across Pakistan</li>
         </ul>
 
         <h3>Tracking Your Order</h3>
