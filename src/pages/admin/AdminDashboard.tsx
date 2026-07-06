@@ -912,7 +912,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                   setOldPrice('');
                   setDescription('');
                   setSelectedCategories([]);
-                  setSelectedSizes(['3-6M', '6-9M']);
+                  setSelectedSizes([]);
                   setImages(['', '', '']);
                   setImagePreviews(['', '', '']);
                   setImageFiles([null, null, null]);
