@@ -54,8 +54,15 @@ app.post('/api/upload', async (req, res) => {
       Body: buffer,
       ContentType: contentType || 'image/jpeg',
     }));
-    const clusterNumber = (process.env.VITE_B2_REGION || 'us-east-005').split('-').pop();
-    const publicUrl = `https://f${clusterNumber}.backblazeb2.com/file/${process.env.VITE_B2_BUCKET_NAME}/${fileName}`;
+    const publicUrl = `https://images.zeerowear.com/file/${process.env.VITE_B2_BUCKET_NAME}/${fileName}`;
+    
+    // Cache warm-up: Cloudflare cache ko turant populate karne ke liye
+    fetch(publicUrl).then(() => {
+      console.log(`Cache warmed up: ${publicUrl}`);
+    }).catch((err) => {
+      console.error(`Cache warm-up failed for ${publicUrl}:`, err.message);
+    });
+
     res.status(200).json({ success: true, url: publicUrl });
   } catch (error) {
     console.error('B2 Upload Error:', error);
