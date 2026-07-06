@@ -66,7 +66,7 @@ const Footer = () => {
 
         <div className="footer-bottom" style={{ borderTop: '1px solid rgba(255,255,255,0.08)', marginTop: '40px', padding: '20px 24px', maxWidth: '1300px', marginLeft: 'auto', marginRight: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>© 2026 Zeero Wear. All rights reserved.</p>
-          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Made with ❤️ in Pakistan</p>
+          <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Made with ❤️ by Traficore Agency</p>
         </div>
       </footer>
 
