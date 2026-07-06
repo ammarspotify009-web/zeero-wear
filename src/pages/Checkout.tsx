@@ -18,20 +18,11 @@ type FormData = {
   email: string;
   address: string;
   city: string;
-  province: string;
   notes: string;
   paymentMethod: 'cod';
 };
 
-const PROVINCES = [
-  'Punjab',
-  'Sindh',
-  'Khyber Pakhtunkhwa',
-  'Balochistan',
-  'Islamabad Capital Territory',
-  'Gilgit-Baltistan',
-  'Azad Kashmir',
-];
+
 
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const navigate = useNavigate();
@@ -62,7 +53,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
       email: '',
       address: '',
       city: '',
-      province: '',
       notes: '',
       paymentMethod: 'cod' as const,
     };
@@ -95,7 +85,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     }
     if (!form.address.trim()) { setError('Delivery address is required.'); return false; }
     if (!form.city.trim()) { setError('City is required.'); return false; }
-    if (!form.province) { setError('Please select a province.'); return false; }
     return true;
   };
 
@@ -125,7 +114,7 @@ Email:    ${form.email || 'Not provided'}
 DELIVERY ADDRESS
 ----------------
 ${form.address}
-${form.city}, ${form.province}
+${form.city}
 
 PAYMENT METHOD
 --------------
@@ -152,7 +141,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         customerName: `${form.firstName} ${form.lastName}`,
         customerPhone: form.phone,
         customerEmail: form.email || '',
-        customerAddress: `${form.address}, ${form.province}`,
+        customerAddress: form.address,
         city: form.city,
         paymentMethod: 'Cash on Delivery',
         subtotal: subtotal,
@@ -185,7 +174,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           customerName: `${form.firstName} ${form.lastName}`,
           phone: form.phone,
           email: form.email,
-          address: `${form.address}, ${form.city}, ${form.province}`,
+          address: `${form.address}, ${form.city}`,
           paymentMethod: 'Cash on Delivery',
           items: cartItems,
           subtotal,
@@ -295,18 +284,9 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                 <input name="address" value={form.address} onChange={handleChange} placeholder="House #, Street, Area" autoComplete="street-address" />
               </div>
 
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label>City <span className="req">*</span></label>
-                  <input name="city" value={form.city} onChange={handleChange} placeholder="Lahore" autoComplete="address-level2" />
-                </div>
-                <div className="form-group">
-                  <label>Province <span className="req">*</span></label>
-                  <select name="province" value={form.province} onChange={handleChange}>
-                    <option value="">Select province…</option>
-                    {PROVINCES.map(p => <option key={p} value={p}>{p}</option>)}
-                  </select>
-                </div>
+              <div className="form-group">
+                <label>City <span className="req">*</span></label>
+                <input name="city" value={form.city} onChange={handleChange} placeholder="Lahore" autoComplete="address-level2" />
               </div>
 
               <h2 className="checkout-section-title" style={{ marginTop: '28px' }}><i className="fas fa-wallet" /> Payment Method</h2>
@@ -351,7 +331,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                 <h4>Delivery To</h4>
                 <p>{form.firstName} {form.lastName}</p>
                 <p>{form.phone}</p>
-                <p>{form.address}, {form.city}, {form.province}</p>
+                <p>{form.address}, {form.city}</p>
               </div>
 
               <div className="confirm-section">
