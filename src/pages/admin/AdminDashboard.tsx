@@ -35,7 +35,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const [images, setImages] = useState(['', '', '']);
   const [imagePreviews, setImagePreviews] = useState<string[]>(['', '', '']);
   const [uploadMode, setUploadMode] = useState<'file' | 'url'>('file');
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(['3-6M', '6-9M']);
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [sizeInput, setSizeInput] = useState('');
   const [availableSizes, setAvailableSizes] = useState<string[]>(['NB', '0-3M', '3-6M', '6-9M', '1Y', '2Y', '3-4Y', '5-6Y', '7-8Y', '17', '18', '20', '32', '33', '34']);
   const [badge, setBadge] = useState<Product['badge']>('none');
@@ -366,7 +366,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
     setImagePreviews(['', '', '']);
     setImageFiles([null, null, null]);
     setUploadProgress(['idle', 'idle', 'idle']);
-    setSelectedSizes(['3-6M', '6-9M']);
+    setSelectedSizes([]);
     loadSizes().then(data => {
       if (data.length > 0) setAvailableSizes(data);
     });
@@ -650,7 +650,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
               setOldPrice('');
               setDescription('');
               setSelectedCategories([]);
-              setSelectedSizes(['3-6M', '6-9M']);
+              setSelectedSizes([]);
               setImages(['', '', '']);
               setImagePreviews(['', '', '']);
               setImageFiles([null, null, null]);
