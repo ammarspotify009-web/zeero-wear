@@ -12,8 +12,7 @@ const DELIVERY_FEE = 199;
 const FREE_DELIVERY_THRESHOLD = 3000;
 
 type FormData = {
-  firstName: string;
-  lastName: string;
+  fullName: string;
   phone: string;
   email: string;
   address: string;
@@ -47,8 +46,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
       }
     }
     return {
-      firstName: '',
-      lastName: '',
+      fullName: '',
       phone: '',
       email: '',
       address: '',
@@ -76,8 +74,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   };
 
   const validate = (): boolean => {
-    if (!form.firstName.trim()) { setError('First name is required.'); return false; }
-    if (!form.lastName.trim()) { setError('Last name is required.'); return false; }
+    if (!form.fullName.trim()) { setError('Full name is required.'); return false; }
     if (!form.phone.trim()) { setError('Phone number is required.'); return false; }
     if (!/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())) {
       setError('Please enter a valid phone number.');
@@ -107,7 +104,7 @@ NEW ORDER RECEIVED — Zeero Wear
 
 CUSTOMER DETAILS
 ----------------
-Name:     ${form.firstName} ${form.lastName}
+Name:     ${form.fullName}
 Phone:    ${form.phone}
 Email:    ${form.email || 'Not provided'}
 
@@ -138,7 +135,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
       
       const newOrder: Order = {
         id: orderRef,
-        customerName: `${form.firstName} ${form.lastName}`,
+        customerName: form.fullName,
         customerPhone: form.phone,
         customerEmail: form.email || '',
         customerAddress: form.address,
@@ -171,7 +168,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          customerName: `${form.firstName} ${form.lastName}`,
+          customerName: form.fullName,
           phone: form.phone,
           email: form.email,
           address: `${form.address}, ${form.city}`,
@@ -219,7 +216,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           </div>
           <h1>Order Placed!</h1>
           <p className="success-sub">
-            Thank you, <strong>{form.firstName}</strong>! Your order has been received.
+            Thank you, <strong>{form.fullName}</strong>! Your order has been received.
             Our team will contact you at <strong>{form.phone}</strong> to confirm delivery.
           </p>
           <div className="success-summary-box">
@@ -257,15 +254,9 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
             <form className="checkout-form-card" onSubmit={handleReview} noValidate>
               <h2 className="checkout-section-title"><i className="fas fa-user" /> Contact & Delivery</h2>
 
-              <div className="form-row-2">
-                <div className="form-group">
-                  <label>First Name <span className="req">*</span></label>
-                  <input name="firstName" value={form.firstName} onChange={handleChange} placeholder="Ali" autoComplete="given-name" />
-                </div>
-                <div className="form-group">
-                  <label>Last Name <span className="req">*</span></label>
-                  <input name="lastName" value={form.lastName} onChange={handleChange} placeholder="Khan" autoComplete="family-name" />
-                </div>
+              <div className="form-group">
+                <label>Full Name <span className="req">*</span></label>
+                <input name="fullName" value={form.fullName} onChange={handleChange} placeholder="Ali Khan" autoComplete="name" />
               </div>
 
               <div className="form-row-2">
@@ -280,7 +271,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
               </div>
 
               <div className="form-group">
-                <label>Street Address <span className="req">*</span></label>
+                <label>Complete Address <span className="req">*</span></label>
                 <input name="address" value={form.address} onChange={handleChange} placeholder="House #, Street, Area" autoComplete="street-address" />
               </div>
 
@@ -329,7 +320,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
               <div className="confirm-section">
                 <h4>Delivery To</h4>
-                <p>{form.firstName} {form.lastName}</p>
+                <p>{form.fullName}</p>
                 <p>{form.phone}</p>
                 <p>{form.address}, {form.city}</p>
               </div>
