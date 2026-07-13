@@ -19,34 +19,6 @@ export interface Order {
   createdAt?: string;
 }
 
-export const INITIAL_ORDERS: Order[] = [
-  {
-    id: 'ZW-TEST1',
-    customerName: 'Ayesha Khan',
-    customerPhone: '0321-4567890',
-    customerEmail: 'ayesha.khan@gmail.com',
-    customerAddress: 'House 12, Block C, DHA Phase 5',
-    city: 'Karachi',
-    paymentMethod: 'Cash on Delivery',
-    subtotal: 3290,
-    deliveryFee: 250,
-    totalAmount: 3540,
-    items: [
-      {
-        id: 'p1',
-        name: 'PL Baby 2 Pk Zipper Romper Dino and Boat Print',
-        image: 'https://hipkids.pk/cdn/shop/files/29_f1f4d31f-0985-4ddc-83c9-32db12e49bc1.webp?v=1782287979&width=800',
-        price: 3290,
-        quantity: 1,
-        size: '3-6M'
-      }
-    ],
-    notes: 'Please deliver in the evening.',
-    status: 'Pending',
-    orderDate: '2026-07-03'
-  }
-];
-
 // ─── FETCH ALL ORDERS ───
 export const loadOrders = async (): Promise<Order[]> => {
   // Clear any stale localStorage orders — Supabase is the only source of truth
@@ -56,11 +28,11 @@ export const loadOrders = async (): Promise<Order[]> => {
     const { data, error } = await supabase
       .from('orders')
       .select('*')
-      .order('created_at', { ascending: false, nullsFirst: false });
+      .order('createdAt', { ascending: false, nullsFirst: false });
 
     if (error) {
       console.error('Error fetching orders from Supabase:', error);
-      return []; // Return empty on error — do NOT fall back to localStorage
+      return [];
     }
 
     return (data as Order[]) ?? [];
