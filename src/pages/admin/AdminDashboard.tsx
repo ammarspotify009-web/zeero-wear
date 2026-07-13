@@ -58,7 +58,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const [orderActionMsg, setOrderActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('All');
   const [orderDateFilter, setOrderDateFilter] = useState<string>(''); // For calendar filter
-  const [orderSearchQuery, setOrderSearchQuery] = useState<string>(''); // For searching orders
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]); // For bulk actions
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editSaving, setEditSaving] = useState(false);
