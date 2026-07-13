@@ -6,8 +6,12 @@ export default async function handler(req, res) {
   }
 
   const { order } = req.body;
-  if (!order || !order.id || !order.customerEmail) {
-    return res.status(400).json({ error: 'Invalid order data or missing customer email.' });
+  if (!order || !order.id) {
+    return res.status(400).json({ error: 'Invalid order data.' });
+  }
+  // If no email provided, nothing to send — return success silently
+  if (!order.customerEmail || order.customerEmail.trim() === '') {
+    return res.status(200).json({ success: true, skipped: 'No customer email provided.' });
   }
 
   const transporter = nodemailer.createTransport({
