@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({
     <>
       {/* ANNOUNCEMENT BAR */}
       <div className="announcement-bar">
-        100% <span>Authentic & Imported</span> &nbsp;|&nbsp; Free Delivery on orders above PKR <span>3,000/-</span>
+        100% <span>Authentic &amp; Imported</span> &nbsp;|&nbsp; <span>FREE Delivery</span> on All Orders Across Pakistan
       </div>
 
       {/* HEADER */}
