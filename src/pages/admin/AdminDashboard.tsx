@@ -42,12 +42,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
   const [expandedParents, setExpandedParents] = useState<string[]>([]);
 
-  // B2 Upload State
   const [imageFiles, setImageFiles] = useState<(File | null)[]>([null, null, null]);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<('idle' | 'uploading' | 'done' | 'error')[]>(['idle', 'idle', 'idle']);
 
-
+  // Size Chart State
+  const [sizeChartUrl, setSizeChartUrl] = useState('');
+  const [sizeChartFile, setSizeChartFile] = useState<File | null>(null);
+  const [sizeChartUploadProgress, setSizeChartUploadProgress] = useState<'idle' | 'uploading' | 'done' | 'error'>('idle');
 
   // Orders state
   const [orders, setOrders] = useState<Order[]>([]);
@@ -56,6 +58,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   const [orderActionMsg, setOrderActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [orderFilter, setOrderFilter] = useState<OrderFilter>('All');
   const [orderDateFilter, setOrderDateFilter] = useState<string>(''); // For calendar filter
+  const [orderSearchQuery, setOrderSearchQuery] = useState<string>(''); // For searching orders
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]); // For bulk actions
   const [editingOrder, setEditingOrder] = useState<Order | null>(null);
   const [editSaving, setEditSaving] = useState(false);
@@ -329,6 +332,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
       return;
     }
 
+    let finalSizeChartUrl = sizeChartUrl;
+    if (sizeChartFile) {
+      setIsUploading(true);
+      setSizeChartUploadProgress('uploading');
+      const result = await uploadImageToB2(sizeChartFile);
+      if (result.success && result.url) {
+        finalSizeChartUrl = result.url;
+        setSizeChartUploadProgress('done');
+      } else {
+        setSizeChartUploadProgress('error');
+        setIsUploading(false);
+        alert(`Failed to upload size chart: ${result.error}`);
+        return;
+      }
+    }
+
     const parsedOldPrice = oldPrice ? parseFloat(oldPrice) : undefined;
     const autoTags: string[] = ['new-arrivals'];
     if (parsedOldPrice && parsedOldPrice > parseFloat(price)) {
@@ -345,7 +364,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
       sizes: selectedSizes,
       categories: selectedCategories,
       tags: autoTags,
-      badge
+      badge,
+      sizeChart: finalSizeChartUrl || undefined
     };
 
     if (editingProductId) {
@@ -366,6 +386,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
     setImagePreviews(['', '', '']);
     setImageFiles([null, null, null]);
     setUploadProgress(['idle', 'idle', 'idle']);
+    setSizeChartUrl('');
+    setSizeChartFile(null);
+    setSizeChartUploadProgress('idle');
     setSelectedSizes([]);
     loadSizes().then(data => {
       if (data.length > 0) setAvailableSizes(data);
@@ -662,6 +685,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
               setImages(['', '', '']);
               setImagePreviews(['', '', '']);
               setImageFiles([null, null, null]);
+              setSizeChartUrl('');
+              setSizeChartFile(null);
+              setSizeChartUploadProgress('idle');
               setActiveTab('add-product');
               setIsSidebarOpen(false);
             }}
@@ -924,6 +950,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                   setImages(['', '', '']);
                   setImagePreviews(['', '', '']);
                   setImageFiles([null, null, null]);
+                  setSizeChartUrl('');
+                  setSizeChartFile(null);
+                  setSizeChartUploadProgress('idle');
                   setActiveTab('add-product');
                 }}>
                   <i className="fas fa-plus"></i> Upload New Product
@@ -941,6 +970,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                       <th>Category</th>
                       <th style={{ minWidth: '110px' }}>Badge</th>
                       <th>Sizes</th>
+                      <th>Size Chart</th>
                       <th>Price</th>
                       <th style={{ textAlign: 'center' }}>Actions</th>
                     </tr>
@@ -978,6 +1008,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                             ))}
                           </div>
                         </td>
+                        <td style={{ textAlign: 'center' }}>
+                          {prod.sizeChart ? (
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--success)', fontSize: '16px' }} title="Has Size Chart">
+                              <i className="fas fa-check-circle"></i>
+                            </div>
+                          ) : (
+                            <span style={{ color: 'var(--text-light)', fontSize: '12px' }}>—</span>
+                          )}
+                        </td>
                         <td style={{ fontWeight: 700, color: 'var(--primary)' }}>Rs. {prod.price.toLocaleString()}</td>
                         <td style={{ textAlign: 'center' }}>
                           <button 
@@ -1006,6 +1045,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                               setImages(newImages);
                               setImagePreviews([...newImages]);
                               setImageFiles([null, null, null]);
+                              
+                              setSizeChartUrl(prod.sizeChart || '');
+                              setSizeChartFile(null);
+                              setSizeChartUploadProgress('idle');
                               
                               setActiveTab('add-product');
                             }}
@@ -1285,6 +1328,62 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                     style={{ flex: 1 }}
                   />
                   <button type="button" onClick={handleAddCustomSize} className="btn-primary" style={{ padding: '0 16px', fontSize: '13px' }}>Add Size</button>
+                </div>
+              </div>
+
+              {/* Size Chart Upload */}
+              <div className="form-group" style={{ marginBottom: '24px' }}>
+                <label>Size Chart (Optional)</label>
+                <div style={{ display: 'flex', gap: '16px', alignItems: 'center', marginTop: '8px' }}>
+                  <label
+                    htmlFor="size-chart-upload"
+                    style={{
+                      padding: '10px 16px',
+                      background: 'var(--bg-cream)',
+                      border: '1.5px solid var(--border)',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      fontSize: '13px',
+                      color: 'var(--dark)'
+                    }}
+                  >
+                    <i className="fas fa-upload" style={{ marginRight: '8px' }}></i>
+                    Choose File
+                  </label>
+                  <input
+                    id="size-chart-upload"
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const optimizedFile = await optimizeImage(file);
+                        setSizeChartFile(optimizedFile);
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          setSizeChartUrl(reader.result as string);
+                        };
+                        reader.readAsDataURL(optimizedFile);
+                      }
+                    }}
+                  />
+                  {sizeChartUrl && (
+                    <div style={{ position: 'relative', width: '60px', height: '60px' }}>
+                      <img src={sizeChartUrl} alt="Size Chart Preview" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '6px', border: '1px solid var(--border)' }} />
+                      <button
+                        type="button"
+                        onClick={() => { setSizeChartUrl(''); setSizeChartFile(null); setSizeChartUploadProgress('idle'); }}
+                        style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ff3b30', color: '#fff', border: 'none', borderRadius: '50%', width: '18px', height: '18px', cursor: 'pointer', fontSize: '10px' }}
+                      >
+                        <i className="fas fa-times"></i>
+                      </button>
+                    </div>
+                  )}
+                  {sizeChartUploadProgress === 'uploading' && <span style={{ color: '#d4940a', fontSize: '12px' }}><i className="fas fa-spinner fa-spin"></i> Uploading...</span>}
+                  {sizeChartUploadProgress === 'done' && <span style={{ color: 'var(--success)', fontSize: '12px' }}><i className="fas fa-check"></i> Uploaded</span>}
+                  {sizeChartUploadProgress === 'error' && <span style={{ color: '#ff3b30', fontSize: '12px' }}><i className="fas fa-times"></i> Failed</span>}
                 </div>
               </div>
 

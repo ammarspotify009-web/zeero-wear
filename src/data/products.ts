@@ -9,6 +9,7 @@ export interface Product {
   categories: string[]; // array of categories, e.g. ['baby-boy', 'rompers']
   tags?: string[];   // additional tags like ['newborn', 'sale', 'trending', 'bestsellers']
   badge?: 'sale' | 'best-seller' | 'new-arrival' | 'sold-out' | 'none';
+  sizeChart?: string;
 }
 
 export const INITIAL_PRODUCTS: Product[] = [
@@ -267,7 +268,8 @@ export const addProduct = async (product: Product): Promise<boolean> => {
         sizes: product.sizes,
         categories: product.categories,
         tags: product.tags,
-        badge: product.badge || 'none'
+        badge: product.badge || 'none',
+        sizeChart: product.sizeChart
       }]);
       
     if (error) {
@@ -294,7 +296,8 @@ export const updateProduct = async (product: Product): Promise<boolean> => {
         sizes: product.sizes,
         categories: product.categories,
         tags: product.tags,
-        badge: product.badge || 'none'
+        badge: product.badge || 'none',
+        sizeChart: product.sizeChart || null
       })
       .eq('id', product.id);
       

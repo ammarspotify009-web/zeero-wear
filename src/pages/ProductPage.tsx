@@ -30,6 +30,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
   const [selectedSize, setSelectedSize] = useState<string>('');
   const [emblaRef] = useEmblaCarousel({ loop: true });
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isSizeChartOpen, setIsSizeChartOpen] = useState(false);
 
   // Update selected size when product changes, but leave empty initially to force selection
   useEffect(() => {
@@ -157,6 +158,14 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
                 <div style={{ fontWeight: 700, fontSize: '15px', color: 'var(--dark)' }}>
                   Size: <span style={{ color: 'var(--primary)' }}>{selectedSize || 'Select a size'}</span>
                 </div>
+                {product.sizeChart && (
+                  <button 
+                    onClick={() => setIsSizeChartOpen(true)}
+                    style={{ background: 'none', border: 'none', color: 'var(--primary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  >
+                    <i className="fas fa-ruler-horizontal"></i> View Size Chart
+                  </button>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '16px' }}>
                 {product.sizes.map(size => (
@@ -261,6 +270,22 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
                 </div>
               </Link>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Size Chart Modal */}
+      {isSizeChartOpen && product.sizeChart && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }} onClick={() => setIsSizeChartOpen(false)}>
+          <div style={{ position: 'relative', background: '#fff', borderRadius: '12px', padding: '16px', maxWidth: '800px', maxHeight: '90vh', overflow: 'auto' }} onClick={e => e.stopPropagation()}>
+            <button 
+              onClick={() => setIsSizeChartOpen(false)}
+              style={{ position: 'absolute', top: '16px', right: '16px', background: 'rgba(0,0,0,0.1)', border: 'none', borderRadius: '50%', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '16px' }}
+            >
+              <i className="fas fa-times"></i>
+            </button>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>Size Chart</h3>
+            <img src={product.sizeChart} alt="Size Chart" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
         </div>
       )}

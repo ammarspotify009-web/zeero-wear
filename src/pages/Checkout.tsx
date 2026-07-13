@@ -25,7 +25,7 @@ type FormData = {
 
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const navigate = useNavigate();
-  const [step, setStep] = useState<'form' | 'confirm' | 'success'>('form');
+  const [step, setStep] = useState<'form' | 'success'>('form');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [completedStats, setCompletedStats] = useState({ total: 0, totalItems: 0 });
@@ -88,9 +88,11 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     return true;
   };
 
-  const handleReview = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (validate()) setStep('confirm');
+    if (validate()) {
+      await handlePlaceOrder();
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -253,24 +255,11 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
   return (
     <div className="checkout-page">
-      {/* Progress Bar */}
-      <div className="checkout-progress">
-        <div className={`progress-step ${step === 'form' ? 'active' : 'done'}`}>
-          <span className="step-num">{step === 'confirm' ? <i className="fas fa-check" /> : '1'}</span>
-          <span className="step-label">Your Details</span>
-        </div>
-        <div className="progress-line" />
-        <div className={`progress-step ${step === 'confirm' ? 'active' : ''}`}>
-          <span className="step-num">2</span>
-          <span className="step-label">Review & Pay</span>
-        </div>
-      </div>
-
       <div className="checkout-layout">
         {/* ─── FORM STEP ─── */}
         {step === 'form' && (
           <>
-            <form className="checkout-form-card" onSubmit={handleReview} noValidate>
+            <form className="checkout-form-card" onSubmit={handleSubmit} noValidate>
               <h2 className="checkout-section-title"><i className="fas fa-user" /> Contact & Delivery</h2>
 
               <div className="form-group">
@@ -319,69 +308,12 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
               {error && <div className="checkout-error"><i className="fas fa-exclamation-circle" /> {error}</div>}
 
-              <button type="submit" className="btn-primary btn-block checkout-submit">
-                Review Order <i className="fas fa-arrow-right" />
+              <button type="submit" className="btn-primary btn-block checkout-submit" disabled={isLoading}>
+                {isLoading ? <><i className="fas fa-spinner fa-spin" /> Placing…</> : <><i className="fas fa-check" /> Place Order</>}
               </button>
             </form>
 
             {/* Order Summary sidebar */}
-            <aside className="checkout-summary-card">
-              <OrderSummary cartItems={cartItems} subtotal={subtotal} deliveryFee={deliveryFee} total={total} />
-            </aside>
-          </>
-        )}
-
-        {/* ─── CONFIRM STEP ─── */}
-        {step === 'confirm' && (
-          <>
-            <div className="checkout-form-card">
-              <h2 className="checkout-section-title"><i className="fas fa-clipboard-check" /> Review Your Order</h2>
-
-              <div className="confirm-section">
-                <h4>Delivery To</h4>
-                <p>{form.fullName}</p>
-                <p>{form.phone}</p>
-                <p>{form.address}, {form.city}</p>
-              </div>
-
-              <div className="confirm-section">
-                <h4>Payment Method</h4>
-                <p>💵 Cash on Delivery</p>
-              </div>
-
-              <div className="confirm-section">
-                <h4>Items ({totalItems})</h4>
-                {cartItems.map((item, idx) => (
-                  <div className="confirm-item" key={`${item.id}-${item.size}-${idx}`}>
-                    <img src={item.image} alt={item.name} className="confirm-item-img" />
-                    <div className="confirm-item-info">
-                      <span className="confirm-item-name">{item.name}</span>
-                      <span className="confirm-item-meta">Size: {item.size} · Qty: {item.quantity}</span>
-                    </div>
-                    <span className="confirm-item-price">Rs. {(item.price * item.quantity).toLocaleString()}</span>
-                  </div>
-                ))}
-              </div>
-
-              {form.notes && (
-                <div className="confirm-section">
-                  <h4>Note</h4>
-                  <p style={{ fontStyle: 'italic', color: 'var(--text-light)' }}>{form.notes}</p>
-                </div>
-              )}
-
-              {error && <div className="checkout-error"><i className="fas fa-exclamation-circle" /> {error}</div>}
-
-              <div className="confirm-actions">
-                <button className="btn-outline" onClick={() => setStep('form')} disabled={isLoading}>
-                  <i className="fas fa-arrow-left" /> Edit Details
-                </button>
-                <button className="btn-primary" onClick={handlePlaceOrder} disabled={isLoading}>
-                  {isLoading ? <><i className="fas fa-spinner fa-spin" /> Placing…</> : <><i className="fas fa-check" /> Place Order</>}
-                </button>
-              </div>
-            </div>
-
             <aside className="checkout-summary-card">
               <OrderSummary cartItems={cartItems} subtotal={subtotal} deliveryFee={deliveryFee} total={total} />
             </aside>
