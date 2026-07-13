@@ -53,7 +53,7 @@ export const loadOrders = async (): Promise<Order[]> => {
     const { data, error } = await supabase
       .from('orders')
       .select('*')
-      .order('createdAt', { ascending: false });
+      .order('created_at', { ascending: false, nullsFirst: false });
 
     if (error) {
       console.error('Error fetching orders from Supabase:', error);

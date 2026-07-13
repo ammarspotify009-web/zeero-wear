@@ -236,13 +236,20 @@ export const loadProducts = async (): Promise<Product[]> => {
       
     if (error) {
       console.error('Error fetching products from Supabase:', error);
-      return [];
+      // Fallback to initial products if Supabase fails
+      return INITIAL_PRODUCTS;
+    }
+    
+    // If Supabase returns empty array, use initial products as fallback
+    if (!data || data.length === 0) {
+      console.warn('No products in Supabase, using initial products as fallback');
+      return INITIAL_PRODUCTS;
     }
     
     return data as Product[];
   } catch (err) {
     console.error('Exception fetching products:', err);
-    return [];
+    return INITIAL_PRODUCTS;
   }
 };
 

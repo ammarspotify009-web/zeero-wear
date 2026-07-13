@@ -2,6 +2,15 @@
   "functions": {
     "api/upload.js": {
       "maxDuration": 30
+    },
+    "api/order.js": {
+      "maxDuration": 30
+    },
+    "api/contact.js": {
+      "maxDuration": 15
+    },
+    "api/admin/approve-order.js": {
+      "maxDuration": 15
     }
   },
   "rewrites": [

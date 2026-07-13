@@ -193,7 +193,12 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           value: total,
           currency: 'PKR',
           content_type: 'product',
-          content_ids: cartItems.map(item => item.id),
+          content_ids: cartItems.map(item => String(item.id)),
+          contents: cartItems.map(item => ({
+            id: String(item.id),
+            quantity: item.quantity,
+            item_price: item.price,
+          })),
           num_items: cartItems.reduce((acc, item) => acc + item.quantity, 0)
         });
       }
