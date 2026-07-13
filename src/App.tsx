@@ -95,6 +95,15 @@ function AppContent() {
       return [...prev, { ...item, quantity: 1 }];
     });
     setIsCartOpen(true);
+    if (typeof (window as any).fbq === 'function') {
+      (window as any).fbq('track', 'AddToCart', {
+        content_name: item.name,
+        content_ids: [item.id],
+        content_type: 'product',
+        value: item.price,
+        currency: 'PKR'
+      });
+    }
   };
 
   const removeFromCart = (id: string, size: string) => {

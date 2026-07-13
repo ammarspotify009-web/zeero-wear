@@ -30,9 +30,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const [error, setError] = useState('');
   const [completedStats, setCompletedStats] = useState({ total: 0, totalItems: 0 });
 
-  // Scroll to top when page loads
+  // Scroll to top when page loads and fire InitiateCheckout event
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof (window as any).fbq === 'function') {
+      (window as any).fbq('track', 'InitiateCheckout');
+    }
   }, []);
 
 
@@ -184,6 +187,17 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
       clearCart();
       localStorage.removeItem('zeero_wear_checkout_form');
+      
+      if (typeof (window as any).fbq === 'function') {
+        (window as any).fbq('track', 'Purchase', {
+          value: total,
+          currency: 'PKR',
+          content_type: 'product',
+          content_ids: cartItems.map(item => item.id),
+          num_items: cartItems.reduce((acc, item) => acc + item.quantity, 0)
+        });
+      }
+
       setStep('success');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Something went wrong. Please try again.');
