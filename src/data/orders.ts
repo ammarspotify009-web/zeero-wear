@@ -49,6 +49,9 @@ export const INITIAL_ORDERS: Order[] = [
 
 // ─── FETCH ALL ORDERS ───
 export const loadOrders = async (): Promise<Order[]> => {
+  // Clear any stale localStorage orders — Supabase is the only source of truth
+  localStorage.removeItem('zeero_wear_orders');
+
   try {
     const { data, error } = await supabase
       .from('orders')
@@ -57,25 +60,14 @@ export const loadOrders = async (): Promise<Order[]> => {
 
     if (error) {
       console.error('Error fetching orders from Supabase:', error);
-      const localData = localStorage.getItem('zeero_wear_orders');
-      if (localData) return JSON.parse(localData);
-      return []; // Return empty if error and no local data
+      return []; // Return empty on error — do NOT fall back to localStorage
     }
 
-    if (data) {
-      return data as Order[];
-    }
+    return (data as Order[]) ?? [];
   } catch (err) {
     console.error('Exception fetching orders:', err);
+    return [];
   }
-
-  // Fallback to localStorage if Supabase fails completely
-  const localData = localStorage.getItem('zeero_wear_orders');
-  if (localData) {
-    return JSON.parse(localData);
-  }
-
-  return [];
 };
 
 // ─── INSERT NEW ORDER ───
@@ -190,7 +182,7 @@ export const deleteOrder = async (orderId: string): Promise<boolean> => {
   }
 };
 
-// ─── LEGACY: localStorage fallback (kept for safety, no longer used as primary) ───
-export const saveOrders = (orders: Order[]) => {
-  localStorage.setItem('zeero_wear_orders', JSON.stringify(orders));
+// ─── LEGACY: No longer used. Orders are now Supabase-only. ───
+export const saveOrders = (_orders: Order[]) => {
+  // No-op: localStorage orders are deprecated. Supabase is the single source of truth.
 };
