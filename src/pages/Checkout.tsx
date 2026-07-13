@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CartItem } from '../types';
 import { loadOrders, saveOrders, addOrderToSupabase, type Order } from '../data/orders';
+import { getPKTDateString } from '../lib/dateUtils';
 
 type CheckoutProps = {
   cartItems: CartItem[];
@@ -152,7 +153,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         items: cartItems,
         notes: form.notes,
         status: 'Pending',
-        orderDate: new Date().toISOString().split('T')[0]
+        orderDate: getPKTDateString()
       };
 
       // 1. Save to Supabase (primary database)

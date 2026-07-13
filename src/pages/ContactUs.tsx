@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { saveQuery, type Query } from '../data/queries';
+import { getPKTDateString } from '../lib/dateUtils';
 
 const ContactUs: React.FC = () => {
   const [name, setName] = useState('');
@@ -32,7 +33,7 @@ const ContactUs: React.FC = () => {
           email,
           phone,
           message,
-          date: new Date().toISOString().split('T')[0],
+          date: getPKTDateString(),
           status: 'Unread'
         };
 

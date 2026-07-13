@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { getPKTDateString } from '../../lib/dateUtils';
 import type { Product } from '../../data/products';
 import { loadOrders, updateOrderStatus, updateOrderDetails, bulkUpdateOrderStatus, deleteOrder, type Order, type OrderEditFields } from '../../data/orders';
 import { loadSizes, addSizeToDb, deleteSizeFromDb } from '../../data/sizes';
@@ -136,7 +137,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   };
 
   // Calculate Today's Stats
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getPKTDateString();
   const todaysOrdersList = orders.filter(o => o.orderDate === todayStr);
   const todaysTotalOrders = todaysOrdersList.length;
   const todaysPending = todaysOrdersList.filter(o => o.status === 'Pending').length;
