@@ -1873,12 +1873,12 @@ footer {
   .checkout-summary-card {
     order: -1;
     position: static !important;
-    width: 80%;
+    width: 65%;
     box-sizing: border-box;
   }
 
   .checkout-form-card {
-    width: 80%;
+    width: 65%;
     box-sizing: border-box;
     overflow: hidden;
   }
