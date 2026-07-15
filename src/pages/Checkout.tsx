@@ -157,10 +157,9 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
       };
 
       // 1. Save to Supabase (primary database)
-      try {
-        await addOrderToSupabase(newOrder);
-      } catch (e) {
-        console.error("Supabase insert failed, falling back to local storage:", e);
+      const success = await addOrderToSupabase(newOrder);
+      if (!success) {
+        throw new Error("Unable to save your order. Please check your internet connection and try again.");
       }
       
       // 2. Update local storage (for admin panel fallback if Supabase fails)
