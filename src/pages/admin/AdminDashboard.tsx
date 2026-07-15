@@ -79,7 +79,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
     setIsLoadingOrders(true);
     try {
       const data = await loadOrders();
-      setOrders(data);
+      const sanitized = data.map(o => ({
+        ...o,
+        totalAmount: o.totalAmount || 0,
+        subtotal: o.subtotal || 0,
+        deliveryFee: o.deliveryFee || 0,
+        items: o.items || [],
+        customerName: o.customerName || 'Unknown',
+        customerPhone: o.customerPhone || 'N/A',
+        city: o.city || 'N/A',
+        customerAddress: o.customerAddress || 'N/A',
+      }));
+      setOrders(sanitized);
     } finally {
       setIsLoadingOrders(false);
     }
