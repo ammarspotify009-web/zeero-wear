@@ -1857,13 +1857,13 @@ footer {
 @media (max-width: 820px) {
   .checkout-page {
     padding-top: 8px;
-    overflow-x: clip;
+    overflow-x: hidden;
   }
 
   .checkout-layout {
     grid-template-columns: 1fr;
     margin-top: 12px;
-    padding: 0 14px;
+    padding: 0 12px;
     gap: 16px;
     width: 100%;
     max-width: 100%;
@@ -1872,13 +1872,9 @@ footer {
 
   .checkout-summary-card {
     order: -1;
-    position: sticky;
-    top: 12px;
-    z-index: 10;
+    position: static;
     width: 100%;
     box-sizing: border-box;
-    border-radius: 14px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.13);
   }
 
   .checkout-form-card {
@@ -1889,6 +1885,24 @@ footer {
 
   .order-summary-inner {
     padding: 16px 14px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .summary-items {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .summary-item {
+    width: 100%;
+    box-sizing: border-box;
+    flex-wrap: wrap;
+  }
+
+  .summary-item-name {
+    word-break: break-word;
+    max-width: 100%;
   }
 
   .summary-row {
@@ -2114,6 +2128,9 @@ footer {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .summary-item-img-wrap {
@@ -2172,7 +2189,9 @@ footer {
   color: var(--dark);
   white-space: nowrap;
   flex-shrink: 0;
-  padding-left: 8px;
+  padding-left: 4px;
+  max-width: 90px;
+  text-align: right;
 }
 
 .summary-divider {
@@ -2187,6 +2206,9 @@ footer {
   align-items: center;
   font-size: 14px;
   margin-bottom: 8px;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .summary-row span:first-child {
