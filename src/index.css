@@ -1895,14 +1895,10 @@ footer {
   }
 
   .summary-item {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
     width: 100%;
-    box-sizing: border-box;
-    flex-wrap: wrap;
-  }
-
-  .summary-item-name {
-    word-break: break-word;
-    max-width: 100%;
   }
 
   .summary-row {
@@ -2125,10 +2121,10 @@ footer {
 }
 
 .summary-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px;
-  min-width: 0;
   width: 100%;
   box-sizing: border-box;
 }
