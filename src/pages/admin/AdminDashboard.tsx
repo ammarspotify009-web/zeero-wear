@@ -1,3 +1,4 @@
+// Admin Dashboard - v2
 import React, { useState, useCallback } from 'react';
 import { getPKTDateString } from '../../lib/dateUtils';
 import type { Product } from '../../data/products';
