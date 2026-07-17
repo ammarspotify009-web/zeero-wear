@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import type { Product } from '../data/products';
 import type { CartItem } from '../types';
@@ -28,8 +28,15 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ products, addToCart }) => {
   const { id } = useParams<{ id: string }>();
   const categoryId = id || 'baby-boy';
 
+  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+
+  // Reset selected size when category changes
+  useEffect(() => {
+    setSelectedSize(null);
+  }, [categoryId]);
+
   // Filter products by categories or tags
-  const filteredProducts = products.filter(product => {
+  let filteredProducts = products.filter(product => {
     const normId = categoryId.toLowerCase();
     
     // Check if categories includes the id, or tags match
@@ -39,6 +46,14 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ products, addToCart }) => {
            (normId === 'girls' && product.categories?.includes('girl')) ||
            (normId === 'newborn' && (product.categories?.includes('new-born') || (product.tags && product.tags.includes('new-born'))));
   });
+
+  // Extract available sizes before filtering by size
+  const availableSizes = Array.from(new Set(filteredProducts.flatMap(p => p.sizes))).sort();
+
+  // If a size is selected, filter the products further
+  if (selectedSize) {
+    filteredProducts = filteredProducts.filter(p => p.sizes.includes(selectedSize));
+  }
 
   const categoryName = CATEGORY_NAMES[categoryId] || (categoryId.charAt(0).toUpperCase() + categoryId.slice(1).replace('-', ' '));
 
@@ -110,6 +125,48 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ products, addToCart }) => {
           <span style={{ margin: '0 8px' }}>/</span>
           <span style={{ color: 'var(--dark)', fontWeight: 600 }}>{categoryName}</span>
         </div>
+
+        {/* Footwear Size Filter */}
+        {categoryId === 'footwear' && availableSizes.length > 0 && (
+          <div style={{ marginBottom: '32px', textAlign: 'center', width: '100%' }}>
+            <h4 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>Filter by Size</h4>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+              <button
+                onClick={() => setSelectedSize(null)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border)',
+                  background: selectedSize === null ? 'var(--primary)' : 'var(--white)',
+                  color: selectedSize === null ? 'var(--white)' : 'var(--text)',
+                  cursor: 'pointer',
+                  fontWeight: selectedSize === null ? 600 : 400,
+                  transition: 'all 0.2s'
+                }}
+              >
+                All Sizes
+              </button>
+              {availableSizes.map(size => (
+                <button
+                  key={size}
+                  onClick={() => setSelectedSize(size)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: '6px',
+                    border: '1px solid var(--border)',
+                    background: selectedSize === size ? 'var(--primary)' : 'var(--white)',
+                    color: selectedSize === size ? 'var(--white)' : 'var(--text)',
+                    cursor: 'pointer',
+                    fontWeight: selectedSize === size ? 600 : 400,
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  {size}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Main Grid Layout */}
         <div style={{ display: 'flex', gap: '30px', flexWrap: 'wrap' }}>
