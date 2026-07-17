@@ -1,25 +1,45 @@
 import { Link, useLocation } from 'react-router-dom';
 
-const categories = [
-  { path: '/category/new-born',    icon: 'fas fa-baby',        label: 'Newborn' },
-  { path: '/category/baby-boy',    icon: 'fas fa-child',       label: 'Baby Boy' },
-  { path: '/category/baby-girl',   icon: 'fas fa-child',       label: 'Baby Girl' },
-  { path: '/category/boy',         icon: 'fas fa-tshirt',      label: 'Boys 2–10' },
-  { path: '/category/girl',        icon: 'fas fa-tshirt',      label: 'Girls 2–10' },
-  { path: '/category/hadid',       icon: 'fas fa-layer-group', label: 'Eastern Wear' },
-  { path: '/category/footwear',    icon: 'fas fa-shoe-prints', label: 'Footwear' },
-  { path: '/category/accessories', icon: 'fas fa-gem',         label: 'Accessories' },
-];
+import type { Category } from '../data/categories';
 
-const Categories = () => {
+const ICON_MAP: Record<string, string> = {
+  'new-arrivals': 'fas fa-star',
+  'new-born': 'fas fa-baby',
+  'baby-boy': 'fas fa-child',
+  'baby-girl': 'fas fa-child',
+  'boy': 'fas fa-tshirt',
+  'girl': 'fas fa-tshirt',
+  'women': 'fas fa-female',
+  'hadid': 'fas fa-layer-group',
+  'footwear': 'fas fa-shoe-prints',
+  'accessories': 'fas fa-gem',
+  'trending': 'fas fa-fire',
+  'sale': 'fas fa-tags',
+  'bestsellers': 'fas fa-award'
+};
+
+type CategoriesProps = {
+  categories?: Category[];
+};
+
+const Categories: React.FC<CategoriesProps> = ({ categories = [] }) => {
   const location = useLocation();
   const currentPath = location.pathname;
 
   const getPillClass = (path: string) =>
     currentPath === path ? 'cat-pill active' : 'cat-pill';
 
+  const topLevelCategories = categories
+    .filter(c => c.parentId === null && c.showInSidebar)
+    .sort((a, b) => a.order - b.order)
+    .map(c => ({
+      path: `/category/${c.id}`,
+      icon: ICON_MAP[c.id] || 'fas fa-box',
+      label: c.name
+    }));
+
   // Duplicate items so the loop is seamless
-  const items = [...categories, ...categories, ...categories];
+  const items = [...topLevelCategories, ...topLevelCategories, ...topLevelCategories];
 
   return (
     <div className="categories-strip">

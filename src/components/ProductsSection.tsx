@@ -8,23 +8,25 @@ type Props = {
   addToCart?: (item: Omit<CartItem, 'quantity'>) => void;
   toggleWishlist?: (product: Product) => void;
   wishlistItems?: Product[];
+  homeCategories?: string[];
 };
 
-const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist, wishlistItems = [] }) => {
-  const categories = Array.from(new Set(
-    products
-      .filter(p => p.categories?.some(c => ['baby-boy', 'baby-girl', 'boy', 'girl'].includes(c)))
-      .flatMap(p => p.categories.filter(c => ['baby-boy', 'baby-girl', 'boy', 'girl'].includes(c)))
-  ));
+const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist, wishlistItems = [], homeCategories = ['boy', 'girl', 'women', 'footwear'] }) => {
+  const categories = homeCategories;
 
   const categoryLabels: Record<string, string> = {
     'baby-boy': 'Baby Boy',
     'baby-girl': 'Baby Girl',
-    'boy': 'Boy',
-    'girl': 'Girl',
+    'boy': 'Boys',
+    'girl': 'Girls',
+    'women': 'Women (Suits)',
+    'footwear': 'Shoes',
+    'accessories': 'Accessories',
+    'hadid': 'Eastern Wear',
+    'new-born': 'Newborn'
   };
 
-  const [activeTab, setActiveTab] = useState(categories[0] || 'baby-boy');
+  const [activeTab, setActiveTab] = useState(categories[0] || 'boy');
 
   // Sync activeTab when products load dynamically (e.g. from Supabase)
   React.useEffect(() => {

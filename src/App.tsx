@@ -35,6 +35,11 @@ function AppContent() {
     return saved ? JSON.parse(saved) : [];
   });
   
+  const [homeCategories, setHomeCategories] = useState<string[]>(() => {
+    const saved = localStorage.getItem('zeero_wear_home_categories');
+    return saved ? JSON.parse(saved) : ['boy', 'girl', 'women', 'footwear'];
+  });
+  
   useEffect(() => {
     localStorage.setItem('zeero_wear_cart', JSON.stringify(cartItems));
   }, [cartItems]);
@@ -42,6 +47,10 @@ function AppContent() {
   useEffect(() => {
     localStorage.setItem('zeero_wear_wishlist', JSON.stringify(wishlistItems));
   }, [wishlistItems]);
+
+  useEffect(() => {
+    localStorage.setItem('zeero_wear_home_categories', JSON.stringify(homeCategories));
+  }, [homeCategories]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);
   const [isWishlistOpen, setIsWishlistOpen] = useState(false);
@@ -165,7 +174,7 @@ function AppContent() {
         />
       )}
       <Routes>
-        <Route path="/" element={<Home products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} />} />
+        <Route path="/" element={<Home products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} homeCategories={homeCategories} categories={categories} />} />
         <Route path="/product/:id" element={<ProductPage products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} />} />
         <Route path="/category/:id" element={<CategoryPage products={products} addToCart={addToCart} />} />
         <Route path="/search" element={<SearchPage products={products} addToCart={addToCart} />} />
@@ -175,8 +184,16 @@ function AppContent() {
         <Route path="/admin-login" element={<AdminLogin />} />
         <Route path="/admin" element={
           <ProtectedAdminRoute>
-            <AdminDashboard products={products} onAddProduct={handleAddProduct} onDeleteProduct={handleDeleteProduct} onEditProduct={handleEditProduct} categories={categories} onCategoriesChange={setCategories} />
-          </ProtectedAdminRoute>
+            <AdminDashboard 
+            products={products} 
+            categories={categories}
+            onAddProduct={handleAddProduct} 
+            onDeleteProduct={handleDeleteProduct} 
+            onEditProduct={handleEditProduct}
+            onCategoriesChange={setCategories}
+            homeCategories={homeCategories}
+            setHomeCategories={setHomeCategories}
+          /></ProtectedAdminRoute>
         } />
       </Routes>
       {!isAdminRoute && !isCheckoutRoute && <Footer />}

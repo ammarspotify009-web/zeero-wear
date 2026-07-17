@@ -9,8 +9,8 @@ type CheckoutProps = {
   clearCart: () => void;
 };
 
-const DELIVERY_FEE = 0;
-const FREE_DELIVERY_THRESHOLD = 0;
+const DELIVERY_FEE = 199;
+const FREE_DELIVERY_THRESHOLD = 3000;
 
 type FormData = {
   fullName: string;
@@ -130,7 +130,7 @@ ${orderLines}
 ORDER SUMMARY
 -------------
 Subtotal:  Rs. ${subtotal.toLocaleString()}
-Delivery:  FREE
+Delivery:  ${deliveryFee === 0 ? 'FREE' : `Rs. ${deliveryFee.toLocaleString()}`}
 TOTAL:     Rs. ${total.toLocaleString()}
 
 ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}

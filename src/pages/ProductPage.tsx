@@ -237,7 +237,7 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
 
           <div style={{ marginTop: '24px', borderTop: '1.5px solid var(--border)', paddingTop: '24px' }}>
             <h3 style={{ fontSize: '15px', color: 'var(--dark)', fontWeight: 700, marginBottom: '8px' }}>Description</h3>
-            <p style={{ color: 'var(--text-light)', fontSize: '14.5px', lineHeight: 1.6, margin: 0 }}>
+            <p style={{ color: 'var(--text-light)', fontSize: '14.5px', lineHeight: 1.6, margin: 0, whiteSpace: 'pre-wrap' }}>
               {isDescriptionExpanded ? product.description : (product.description.length > 150 ? `${product.description.substring(0, 150)}...` : product.description)}
             </p>
             {product.description.length > 150 && (

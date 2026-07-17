@@ -22,7 +22,7 @@ const Reviews = () => {
             <div className="trust-item">
               <div className="trust-icon"><i className="fas fa-shipping-fast"></i></div>
               <h4>Free Shipping</h4>
-              <p>FREE delivery on all orders across Pakistan</p>
+              <p>FREE delivery on orders over Rs. 3000</p>
             </div>
             <div className="trust-item">
               <div className="trust-icon"><i className="fas fa-headset"></i></div>

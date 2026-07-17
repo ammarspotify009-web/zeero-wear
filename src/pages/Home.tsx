@@ -13,14 +13,16 @@ type HomeProps = {
   addToCart: (item: Omit<CartItem, 'quantity'>) => void;
   toggleWishlist: (product: Product) => void;
   wishlistItems: Product[];
+  homeCategories: string[];
+  categories: any[];
 };
 
-const Home: React.FC<HomeProps> = ({ products, addToCart, toggleWishlist, wishlistItems }) => {
+const Home: React.FC<HomeProps> = ({ products, addToCart, toggleWishlist, wishlistItems, homeCategories, categories }) => {
   return (
     <>
       <Hero />
-      <Categories />
-      <ProductsSection products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} />
+      <Categories categories={categories} />
+      <ProductsSection products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} homeCategories={homeCategories} />
       <ShopByAge />
       <Footwear products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} />
       <Reviews />

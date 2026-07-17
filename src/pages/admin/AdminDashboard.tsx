@@ -6,6 +6,7 @@ import { loadSizes, addSizeToDb, deleteSizeFromDb } from '../../data/sizes';
 import { loadQueries, updateQueryStatus, type Query } from '../../data/queries';
 import { uploadImageToB2 } from '../../lib/b2Upload';
 import AdminCategories from './AdminCategories';
+import AdminHomeCategories from './AdminHomeCategories';
 import type { Category } from '../../data/categories';
 
 type AdminDashboardProps = {
@@ -14,15 +15,18 @@ type AdminDashboardProps = {
   onAddProduct: (product: Product) => void;
   onDeleteProduct: (id: string) => void;
   onEditProduct: (product: Product) => void;
+  onEditProduct: (product: Product) => void;
   onCategoriesChange: (categories: Category[]) => void;
+  homeCategories: string[];
+  setHomeCategories: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
-type TabType = 'overview' | 'products' | 'add-product' | 'categories' | 'orders' | 'queries';
+type TabType = 'overview' | 'products' | 'add-product' | 'categories' | 'home-categories' | 'orders' | 'queries';
 type OrderFilter = 'All' | 'Pending' | 'Approved' | 'Cancelled';
 
 
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, onAddProduct, onDeleteProduct, onEditProduct, onCategoriesChange }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, onAddProduct, onDeleteProduct, onEditProduct, onCategoriesChange, homeCategories, setHomeCategories }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   
@@ -682,6 +686,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
             }}
           >
             <i className="fas fa-tags" style={{ width: '20px' }}></i> Categories
+          </button>
+
+          <button 
+            onClick={() => { setActiveTab('home-categories'); setIsSidebarOpen(false); }}
+            style={{
+              background: activeTab === 'home-categories' ? 'var(--primary)' : 'transparent',
+              color: '#fff', border: 'none', padding: '14px 24px', textAlign: 'left', cursor: 'pointer', fontSize: '14.5px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '12px', width: '100%', transition: '0.2s'
+            }}
+          >
+            <i className="fas fa-home" style={{ width: '20px' }}></i> Home Categories
           </button>
 
           <button 
@@ -1546,7 +1560,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
           <AdminCategories categories={categories} onCategoriesChange={onCategoriesChange} />
         )}
 
-
+        {/* TAB 4.5: HOME CATEGORIES */}
+        {activeTab === 'home-categories' && (
+          <AdminHomeCategories homeCategories={homeCategories} setHomeCategories={setHomeCategories} />
+        )}
 
         {/* TAB 5: ORDERS MANAGEMENT */}
         {activeTab === 'orders' && (

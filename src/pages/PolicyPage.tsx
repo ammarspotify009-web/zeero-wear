@@ -14,7 +14,8 @@ const policies: Record<string, { title: string; content: React.ReactNode }> = {
 
         <h3>Shipping Charges</h3>
         <ul>
-          <li>FREE delivery on all orders across Pakistan</li>
+          <li>Standard Delivery: Rs. 199</li>
+          <li>FREE delivery on orders over Rs. 3000 across Pakistan</li>
         </ul>
 
         <h3>Tracking Your Order</h3>
