@@ -15,7 +15,6 @@ type AdminDashboardProps = {
   onAddProduct: (product: Product) => void;
   onDeleteProduct: (id: string) => void;
   onEditProduct: (product: Product) => void;
-  onEditProduct: (product: Product) => void;
   onCategoriesChange: (categories: Category[]) => void;
   homeCategories: string[];
   setHomeCategories: React.Dispatch<React.SetStateAction<string[]>>;
