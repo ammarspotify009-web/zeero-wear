@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import type { CartItem } from '../types';
 import { loadOrders, saveOrders, addOrderToSupabase, type Order } from '../data/orders';
 import { getPKTDateString } from '../lib/dateUtils';
+import { saveAbandonedCart, deleteAbandonedCart } from '../data/abandonedCarts';
 
 type CheckoutProps = {
   cartItems: CartItem[];
@@ -40,29 +41,43 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   }, []);
 
 
-  const [form, setForm] = useState<FormData>(() => {
-    const saved = localStorage.getItem('zeero_wear_checkout_form');
-    if (saved) {
-      try {
-        return JSON.parse(saved);
-      } catch (e) {
-        // ignore JSON parse error
-      }
-    }
-    return {
-      fullName: '',
-      phone: '',
-      email: '',
-      address: '',
-      city: '',
-      notes: '',
-      paymentMethod: 'cod' as const,
-    };
+  const [cartSessionId] = useState(`AC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`);
+
+  const [form, setForm] = useState<FormData>({
+    fullName: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: '',
+    notes: '',
+    paymentMethod: 'cod' as const,
   });
 
   React.useEffect(() => {
-    localStorage.setItem('zeero_wear_checkout_form', JSON.stringify(form));
-  }, [form]);
+    // Only save if some contact info is filled
+    if (!form.fullName && !form.phone && !form.email) return;
+
+    const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+    const total = subtotal + deliveryFee;
+
+    const timeoutId = setTimeout(() => {
+      saveAbandonedCart({
+        id: cartSessionId,
+        customerName: form.fullName,
+        customerPhone: form.phone,
+        customerEmail: form.email,
+        customerAddress: form.address,
+        city: form.city,
+        items: cartItems,
+        subtotal: subtotal,
+        deliveryFee: deliveryFee,
+        totalAmount: total,
+      });
+    }, 1000);
+
+    return () => clearTimeout(timeoutId);
+  }, [form, cartItems, cartSessionId]);
 
   const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
   const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
@@ -188,7 +203,9 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
       }).catch(err => console.warn('Backend email notification failed:', err));
 
       clearCart();
-      localStorage.removeItem('zeero_wear_checkout_form');
+      
+      // Delete the abandoned cart now that they successfully checked out
+      await deleteAbandonedCart(cartSessionId);
       
       if (typeof (window as any).fbq === 'function') {
         (window as any).fbq('track', 'Purchase', {

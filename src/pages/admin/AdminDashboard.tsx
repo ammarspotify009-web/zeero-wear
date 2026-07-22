@@ -8,6 +8,8 @@ import { loadQueries, updateQueryStatus, type Query } from '../../data/queries';
 import { uploadImageToB2 } from '../../lib/b2Upload';
 import AdminCategories from './AdminCategories';
 import AdminHomeCategories from './AdminHomeCategories';
+import AdminAbandonedCarts from './AdminAbandonedCarts';
+import { loadAbandonedCarts } from '../../data/abandonedCarts';
 import type { Category } from '../../data/categories';
 
 type AdminDashboardProps = {
@@ -21,7 +23,7 @@ type AdminDashboardProps = {
   setHomeCategories: React.Dispatch<React.SetStateAction<string[]>>;
 };
 
-type TabType = 'overview' | 'products' | 'add-product' | 'categories' | 'home-categories' | 'orders' | 'queries';
+type TabType = 'overview' | 'products' | 'add-product' | 'categories' | 'home-categories' | 'orders' | 'queries' | 'abandoned-carts';
 type OrderFilter = 'All' | 'Pending' | 'Approved' | 'Cancelled';
 
 
@@ -77,6 +79,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
   const [queries, setQueries] = useState<Query[]>([]);
   const [timePeriod, setTimePeriod] = useState<'7days' | '30days' | 'all'>('30days');
+  const [abandonedCartsCount, setAbandonedCartsCount] = useState(0);
 
   // ─── Load orders from Supabase ───
   const refreshOrders = useCallback(async () => {
@@ -107,6 +110,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
     loadSizes().then(data => {
       if (data.length > 0) setAvailableSizes(data);
     });
+    loadAbandonedCarts().then(carts => setAbandonedCartsCount(carts.length));
   }, [refreshOrders]);
 
   // Time filter logic
@@ -736,6 +740,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
               <span style={{
                 background: '#ff3b30', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '50px', marginLeft: 'auto'
               }}>{queries.filter(q => q.status === 'Unread').length}</span>
+            )}
+          </button>
+
+
+
+          <button 
+            onClick={() => { setActiveTab('abandoned-carts'); setIsSidebarOpen(false); }}
+            style={{
+              background: activeTab === 'abandoned-carts' ? 'var(--primary)' : 'transparent',
+              color: '#fff', border: 'none', padding: '14px 24px', textAlign: 'left', cursor: 'pointer', fontSize: '14.5px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '12px', width: '100%', transition: '0.2s'
+            }}
+          >
+            <i className="fas fa-shopping-basket" style={{ width: '20px' }}></i> Abandoned Carts
+            {abandonedCartsCount > 0 && (
+              <span style={{
+                background: '#ff3b30', color: '#fff', fontSize: '11px', fontWeight: 700, padding: '2px 8px', borderRadius: '50px', marginLeft: 'auto'
+              }}>{abandonedCartsCount}</span>
             )}
           </button>
 
@@ -2241,7 +2262,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
           </div>
         )}
 
-
+        {/* TAB 7: ABANDONED CARTS */}
+        {activeTab === 'abandoned-carts' && (
+          <AdminAbandonedCarts onCountChange={setAbandonedCartsCount} />
+        )}
 
       </div>
     </div>

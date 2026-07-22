@@ -41,6 +41,23 @@ async function setup() {
       );
     `);
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS abandoned_carts (
+        id VARCHAR(50) PRIMARY KEY,
+        "customerName" VARCHAR(255),
+        "customerPhone" VARCHAR(50),
+        "customerEmail" VARCHAR(255),
+        "customerAddress" TEXT,
+        city VARCHAR(100),
+        items JSONB,
+        subtotal INTEGER,
+        "deliveryFee" INTEGER,
+        "totalAmount" INTEGER,
+        "lastUpdated" TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+
     console.log("Tables created successfully.");
   } catch (err) {
     console.error("Error creating table:", err);
