@@ -79,6 +79,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
   const [queries, setQueries] = useState<Query[]>([]);
   const [timePeriod, setTimePeriod] = useState<'7days' | '30days' | 'all'>('30days');
+  const [overviewDateFilter, setOverviewDateFilter] = useState<string>('');
   const [abandonedCartsCount, setAbandonedCartsCount] = useState(0);
 
   // ─── Load orders from Supabase ───
@@ -116,6 +117,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
   // Time filter logic
   const now = new Date();
   const getFilteredOrders = () => {
+    if (overviewDateFilter) {
+      return orders.filter(o => o.orderDate === overviewDateFilter);
+    }
     if (timePeriod === 'all') return orders;
     const cutoffDate = new Date();
     cutoffDate.setDate(now.getDate() - (timePeriod === '7days' ? 7 : 30));
@@ -831,10 +835,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '12px' }}>
               <h3 style={{ fontSize: '18px', color: '#1a2238', margin: 0, fontWeight: 700 }}>Overall Statistics</h3>
               <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                {overviewDateFilter && (
+                  <button 
+                    onClick={() => setOverviewDateFilter('')}
+                    style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid #ff3b30', background: 'transparent', color: '#ff3b30', fontSize: '13px', cursor: 'pointer' }}
+                  >
+                    Clear Date
+                  </button>
+                )}
+                <input
+                  type="date"
+                  value={overviewDateFilter}
+                  onChange={(e) => setOverviewDateFilter(e.target.value)}
+                  style={{ padding: '7px 12px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', outline: 'none', color: 'var(--text)' }}
+                />
                 <select 
                   value={timePeriod} 
-                  onChange={(e) => setTimePeriod(e.target.value as '7days' | '30days' | 'all')}
-                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', outline: 'none' }}
+                  onChange={(e) => { setTimePeriod(e.target.value as '7days' | '30days' | 'all'); setOverviewDateFilter(''); }}
+                  disabled={!!overviewDateFilter}
+                  style={{ padding: '8px 12px', borderRadius: '6px', border: '1px solid var(--border)', fontSize: '13px', outline: 'none', opacity: overviewDateFilter ? 0.5 : 1 }}
                 >
                   <option value="7days">Last 7 Days</option>
                   <option value="30days">Last 30 Days</option>
@@ -1765,7 +1784,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                             style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
                           />
                           <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--primary)' }}>{order.id}</span>
-                          <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>{order.orderDate}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>
+                            {order.createdAt ? new Date(order.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : order.orderDate}
+                          </span>
                         </div>
                         <span style={{
                           fontSize: '11.5px',
