@@ -1785,7 +1785,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                           />
                           <span style={{ fontWeight: 800, fontSize: '15px', color: 'var(--primary)' }}>{order.id}</span>
                           <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>
-                            {order.createdAt ? new Date(order.createdAt).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : order.orderDate}
+                            {order.createdAt ? new Date(order.createdAt).toLocaleString('en-US', { timeZone: 'Asia/Karachi', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : order.orderDate}
                           </span>
                         </div>
                         <span style={{
