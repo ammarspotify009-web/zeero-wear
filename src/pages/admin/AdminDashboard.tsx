@@ -802,7 +802,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                 <p style={{ color: 'var(--text-light)', fontSize: '14px', marginTop: '4px' }}>Real-time business sales & activity trackers.</p>
               </div>
               <div style={{ background: '#fff', border: '1px solid var(--border)', padding: '10px 18px', borderRadius: '8px', fontSize: '14px', fontWeight: 600, color: 'var(--dark)' }}>
-                <i className="far fa-calendar-alt"></i> Today: {new Date().toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                <i className="far fa-calendar-alt"></i> Today: {new Date().toLocaleDateString('en-US', { timeZone: 'Asia/Karachi', weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
               </div>
             </div>
 
@@ -1041,7 +1041,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                     </tr>
                   </thead>
                   <tbody id="products-table-body">
-                    {products.map(prod => (
+                    {[...products].reverse().map(prod => (
                       <tr key={prod.id} data-category={prod.categories?.[0]} style={{ borderBottom: '1px solid var(--border)' }}>
                         <td style={{ padding: '12px 20px' }}>
                           <img src={prod.images[0]} alt="" style={{ width: '50px', height: '60px', borderRadius: '6px', objectFit: 'cover', border: '1px solid var(--border)' }} />
