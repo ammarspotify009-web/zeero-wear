@@ -85,9 +85,9 @@ const AdminAbandonedCarts: React.FC<AdminAbandonedCartsProps> = ({ onCountChange
                   <tr key={cart.id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '16px' }}>
                       <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--primary)' }}>{cart.id}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-light)', marginTop: '4px' }}>
-                        {cart.lastUpdated ? new Date(cart.lastUpdated).toLocaleString('en-US', { timeZone: 'Asia/Karachi', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
-                      </div>
+                      <span style={{ fontSize: '13px', color: 'var(--text-light)' }}>
+                        {cart.lastUpdated ? new Date(cart.lastUpdated.endsWith('Z') || cart.lastUpdated.includes('+') ? cart.lastUpdated : cart.lastUpdated + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Karachi', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : 'N/A'}
+                      </span>
                     </td>
                     <td style={{ padding: '16px' }}>
                       <div style={{ fontWeight: 600, color: 'var(--dark)' }}>{cart.customerName || 'No Name'}</div>

@@ -247,7 +247,20 @@ export const loadProducts = async (): Promise<Product[]> => {
       return INITIAL_PRODUCTS;
     }
     
-    return data as Product[];
+    const products = data as Product[];
+    
+    // Sort products newest first (descending order based on ID)
+    return products.sort((a, b) => {
+      const getScore = (id: string) => {
+        if (id.startsWith('p-')) {
+          const ts = parseInt(id.substring(2), 10);
+          return isNaN(ts) ? 0 : ts;
+        }
+        const num = parseInt(id.substring(1), 10);
+        return isNaN(num) ? 0 : num;
+      };
+      return getScore(b.id) - getScore(a.id);
+    });
   } catch (err) {
     console.error('Exception fetching products:', err);
     return INITIAL_PRODUCTS;
