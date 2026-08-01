@@ -5,6 +5,11 @@ import { loadOrders, saveOrders, addOrderToSupabase, type Order } from '../data/
 import { getPKTDateString } from '../lib/dateUtils';
 import { saveAbandonedCart, deleteAbandonedCart } from '../data/abandonedCarts';
 
+declare global {
+  interface Window {
+    Xpay: any;
+  }
+}
 type CheckoutProps = {
   cartItems: CartItem[];
   clearCart: () => void;
@@ -20,7 +25,7 @@ type FormData = {
   address: string;
   city: string;
   notes: string;
-  paymentMethod: 'cod';
+  paymentMethod: 'cod' | 'card' | 'jazzcash';
 };
 
 
@@ -52,6 +57,98 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     notes: '',
     paymentMethod: 'cod' as const,
   });
+
+  const [xpayInstances, setXpayInstances] = useState<{card: any, jazzcash: any} | null>(null);
+  const xpayInitRef = React.useRef(false);
+
+  React.useEffect(() => {
+    let timeoutId: NodeJS.Timeout;
+    
+    const initXpay = () => {
+      if (window.Xpay) {
+        if (xpayInitRef.current) return;
+        
+        try {
+          const pubKey = import.meta.env.VITE_XPAY_PUBLIC_KEY;
+          const accountId = import.meta.env.VITE_XPAY_ACCOUNT_ID;
+          
+          if (!pubKey || !accountId) {
+            console.warn("XPay keys missing in environment");
+            return;
+          }
+
+          xpayInitRef.current = true;
+          
+          // XPay SDK only requires publishable credentials
+          const xpayCard = new window.Xpay(pubKey, accountId);
+          const xpayJazzcash = new window.Xpay(pubKey, accountId);
+
+          const options = {
+            override: true,
+            style: {
+              ".input": {},
+              ".invalid": {},
+              ".label": {},
+            },
+          };
+          
+          // Clear any existing iframes (useful for HMR)
+          const cardEl = document.getElementById('card-element');
+          const jazzEl = document.getElementById('jazzcash-element');
+          if (cardEl) cardEl.innerHTML = '';
+          if (jazzEl) jazzEl.innerHTML = '';
+
+          xpayCard.element('#card-element', { ...options, paymentMethods: ['card'] });
+          xpayJazzcash.element('#jazzcash-element', { ...options, paymentMethods: ['jazzcash'] });
+
+          setXpayInstances({ card: xpayCard, jazzcash: xpayJazzcash });
+        } catch (err) {
+          console.error("XPay Element init error:", err);
+          xpayInitRef.current = false;
+        }
+      } else {
+        timeoutId = setTimeout(initXpay, 500);
+      }
+    };
+    
+    if (step === 'form') {
+      initXpay();
+    }
+    
+    return () => clearTimeout(timeoutId);
+  }, [step]);
+
+  // ── 3DS Modal Customizer & Close Button ──
+  React.useEffect(() => {
+    if (step !== 'form') return;
+    
+    const observer = new MutationObserver((mutations) => {
+      for (const mutation of mutations) {
+        if (mutation.addedNodes.length) {
+          const popup = document.getElementById('3ds-popup-main');
+          if (popup && !document.getElementById('custom-3ds-close')) {
+            const closeBtn = document.createElement('button');
+            closeBtn.id = 'custom-3ds-close';
+            closeBtn.className = 'custom-3ds-close';
+            closeBtn.innerHTML = '&times;';
+            closeBtn.title = 'Cancel Verification';
+            closeBtn.onclick = () => {
+              popup.remove();
+              setIsLoading(false);
+              setError("Payment verification was cancelled.");
+            };
+            const innerPopup = document.getElementById('threeDsPopup');
+            if (innerPopup) {
+              innerPopup.appendChild(closeBtn);
+            }
+          }
+        }
+      }
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, [step]);
 
   React.useEffect(() => {
     // Only save if some contact info is filled
@@ -153,6 +250,63 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
     try {
       const orderRef = `ZW-${Date.now().toString(36).toUpperCase()}`;
+
+      if (form.paymentMethod !== 'cod') {
+        if (!xpayInstances) {
+          throw new Error("Payment system is initializing. Please wait a moment and try again.");
+        }
+        
+        // 1. Create Payment Intent via Backend
+        console.log("Fetching /api/create-payment-intent with total:", total, "orderRef:", orderRef);
+        const intentRes = await fetch('/api/create-payment-intent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            amount: total,
+            currency: "PKR",
+            orderRef: orderRef,
+            customer: {
+              name: form.fullName,
+              phone: form.phone,
+              email: form.email || "customer@zeerowear.com"
+            }
+          })
+        });
+        
+        const intentData = await intentRes.json();
+        console.log("Intent API Response Status:", intentRes.status);
+        console.log("Intent API Response Data:", intentData);
+        
+        if (!intentRes.ok) {
+          console.error("Intent API Error:", intentData);
+          throw new Error(intentData.error || "Failed to initialize payment");
+        }
+
+        // 2. Confirm Payment via SDK
+        const activeXpay = form.paymentMethod === 'card' ? xpayInstances.card : xpayInstances.jazzcash;
+        console.log("Calling confirmPayment with method:", form.paymentMethod);
+        console.log("Client Secret:", intentData.clientSecret);
+        
+        let confirmResult;
+        try {
+          confirmResult = await activeXpay.confirmPayment(
+            form.paymentMethod,
+            intentData.clientSecret,
+            { name: form.fullName, email: form.email || "customer@zeerowear.com", phone: form.phone },
+            intentData.encryptionKey
+          );
+          console.log("confirmPayment result:", confirmResult);
+        } catch (sdkError) {
+          console.error("Exception thrown by activeXpay.confirmPayment:", sdkError);
+          throw sdkError;
+        }
+        
+        const { error, message } = confirmResult;
+        if (error || (message && message.toLowerCase().includes('fail'))) {
+           console.error("Payment declined by SDK. Error flag:", error, "Message:", message);
+           throw new Error(message || "Payment declined");
+        }
+      }
       
       const newOrder: Order = {
         id: orderRef,
@@ -161,7 +315,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         customerEmail: form.email || '',
         customerAddress: form.address,
         city: form.city,
-        paymentMethod: 'Cash on Delivery',
+        paymentMethod: form.paymentMethod === 'cod' ? 'Cash on Delivery' : (form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash'),
         subtotal: subtotal,
         deliveryFee: deliveryFee,
         totalAmount: total,
@@ -192,7 +346,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           phone: form.phone,
           email: form.email,
           address: `${form.address}, ${form.city}`,
-          paymentMethod: 'Cash on Delivery',
+          paymentMethod: form.paymentMethod === 'cod' ? 'Cash on Delivery' : (form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash'),
           items: cartItems,
           subtotal,
           deliveryFee,
@@ -258,7 +412,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
             Our team will contact you at <strong>{form.phone}</strong> to confirm delivery.
           </p>
           <div className="success-summary-box">
-            <div className="success-row"><span>Payment</span><span>Cash on Delivery</span></div>
+            <div className="success-row"><span>Payment</span><span>{form.paymentMethod === 'cod' ? 'Cash on Delivery' : (form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash')}</span></div>
             <div className="success-row"><span>Items</span><span>{completedStats.totalItems} item{completedStats.totalItems > 1 ? 's' : ''}</span></div>
             <div className="success-row"><span>Order Total</span><span>Rs. {completedStats.total.toLocaleString()}</span></div>
           </div>
@@ -308,14 +462,34 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
               <h2 className="checkout-section-title" style={{ marginTop: '28px' }}><i className="fas fa-wallet" /> Payment Method</h2>
 
               <div className="payment-options">
-                <label className="payment-option selected">
-                  <input type="radio" name="paymentMethod" value="cod" checked readOnly />
+                <label className={`payment-option ${form.paymentMethod === 'cod' ? 'selected' : ''}`}>
+                  <input type="radio" name="paymentMethod" value="cod" checked={form.paymentMethod === 'cod'} onChange={handleChange} />
                   <i className="fas fa-money-bill-wave" />
                   <div>
                     <strong>Cash on Delivery</strong>
                     <p>Pay when your order arrives</p>
                   </div>
                 </label>
+                
+                <label className={`payment-option ${form.paymentMethod === 'card' ? 'selected' : ''}`}>
+                  <input type="radio" name="paymentMethod" value="card" checked={form.paymentMethod === 'card'} onChange={handleChange} />
+                  <i className="fas fa-credit-card" />
+                  <div>
+                    <strong>Credit / Debit Card</strong>
+                    <p>Pay securely via XPay</p>
+                  </div>
+                </label>
+                <div id="card-element" style={{ display: form.paymentMethod === 'card' ? 'block' : 'none', marginTop: '10px' }}></div>
+
+                <label className={`payment-option ${form.paymentMethod === 'jazzcash' ? 'selected' : ''}`}>
+                  <input type="radio" name="paymentMethod" value="jazzcash" checked={form.paymentMethod === 'jazzcash'} onChange={handleChange} />
+                  <i className="fas fa-mobile-alt" />
+                  <div>
+                    <strong>JazzCash</strong>
+                    <p>Pay via JazzCash Wallet</p>
+                  </div>
+                </label>
+                <div id="jazzcash-element" style={{ display: form.paymentMethod === 'jazzcash' ? 'block' : 'none', marginTop: '10px' }}></div>
               </div>
 
               <div className="form-group" style={{ marginTop: '20px' }}>

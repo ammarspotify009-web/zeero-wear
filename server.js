@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 dotenv.config();
 
@@ -14,7 +16,12 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 app.use(cors());
+app.use('/api/xpay/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 
 // Nodemailer transporter setup
@@ -28,6 +35,145 @@ const transporter = nodemailer.createTransport({
 
 // Store OTPs temporarily in memory for verification
 const otps = new Map();
+
+app.post('/api/create-payment-intent', async (req, res) => {
+  const { amount, currency, customer, orderRef } = req.body;
+  
+  if (!amount || !currency || !customer) {
+    return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  const payload = {
+    amount: amount,
+    currency: currency,
+    payment_method_types: "card",
+    customer: customer,
+    shipping: {
+      address1: "N/A",
+      city: "N/A",
+      country: "PK",
+      province: "N/A",
+      zip: "00000"
+    },
+    metadata: {
+      order_reference: orderRef || ""
+    }
+  };
+
+  const hmacSecret = process.env.XPAY_API_SIGNATURE_SECRET;
+  const secretKey = process.env.XPAY_SECRET_KEY;
+  const accountId = process.env.XPAY_ACCOUNT_ID;
+  const baseUrl = process.env.XPAY_BASE_URL || "https://xstak-pay-stg.xstak.com";
+
+  if (!hmacSecret || !secretKey || !accountId) {
+    return res.status(500).json({ error: 'Payment gateway configuration missing' });
+  }
+
+  const signature = crypto
+    .createHmac("SHA256", hmacSecret)
+    .update(JSON.stringify(payload))
+    .digest("hex");
+
+  try {
+    const response = await fetch(`${baseUrl}/public/v1/payment/intent`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': secretKey,
+        'Content-Type': 'application/json',
+        'x-signature': signature,
+        'x-account-id': accountId,
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+    if (!response.ok) {
+      console.error("Error from XPay:", data);
+      return res.status(response.status).json({ error: 'Failed to create payment intent', details: data });
+    }
+
+    res.json({
+      encryptionKey: data.data?.encryptionKey,
+      clientSecret: data.data?.pi_client_secret,
+    });
+  } catch (error) {
+    console.error("Error creating payment intent:", error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/api/xpay/webhook', async (req, res) => {
+  try {
+    const webhookSecret = process.env.XPAY_WEBHOOK_SIGNATURE_SECRET;
+    const incomingSignature = req.headers['x-signature'];
+
+    if (!incomingSignature) {
+      return res.status(401).send('No signature provided');
+    }
+
+    // Verify signature
+    const payloadBuffer = req.body; 
+    if (!Buffer.isBuffer(payloadBuffer)) {
+      return res.status(400).send('Webhook error: Raw body not found');
+    }
+
+    const calculatedSignature = crypto
+      .createHmac('SHA256', webhookSecret)
+      .update(payloadBuffer)
+      .digest('hex');
+
+    if (calculatedSignature !== incomingSignature) {
+      console.error('Webhook signature mismatch');
+      return res.status(401).send('Invalid signature');
+    }
+
+    // Parse the payload
+    const event = JSON.parse(payloadBuffer.toString('utf8'));
+    
+    // Idempotency check & update status
+    const eventType = event.event_type || event.type;
+    const orderRef = event.data?.metadata?.order_reference;
+    const paymentStatus = event.data?.status || event.status;
+
+    if (orderRef) {
+      const { data: order, error: fetchError } = await supabase
+        .from('orders')
+        .select('status')
+        .eq('id', orderRef)
+        .single();
+
+      if (fetchError) {
+        console.error('Error fetching order for webhook:', fetchError);
+      } else if (order) {
+        // Idempotency check:
+        if (order.status === 'Approved' || order.status === 'Cancelled') {
+          console.log(`Order ${orderRef} is already ${order.status}. Skipping webhook event.`);
+          return res.status(200).send('OK (already processed)');
+        }
+
+        let newStatus = 'Pending';
+        if (eventType?.includes('succeed') || paymentStatus?.toLowerCase() === 'succeeded' || paymentStatus?.toLowerCase() === 'paid') {
+          newStatus = 'Approved';
+        } else if (eventType?.includes('failed') || paymentStatus?.toLowerCase() === 'failed' || paymentStatus?.toLowerCase() === 'declined') {
+          newStatus = 'Cancelled';
+        }
+
+        if (newStatus !== 'Pending') {
+          await supabase
+            .from('orders')
+            .update({ status: newStatus })
+            .eq('id', orderRef);
+          console.log(`Order ${orderRef} updated to ${newStatus} via XPay webhook.`);
+        }
+      }
+    }
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('Webhook processing error:', error);
+    res.status(500).send('Webhook handler failed');
+  }
+});
 
 // B2 image upload proxy (avoids CORS by doing upload server-side)
 app.post('/api/upload', async (req, res) => {
