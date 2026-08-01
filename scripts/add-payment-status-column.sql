@@ -7,12 +7,13 @@ ADD COLUMN IF NOT EXISTS payment_status TEXT
   DEFAULT 'not_applicable'
   CHECK (payment_status IN ('pending', 'paid', 'failed', 'not_applicable'));
 
--- Update existing online orders (non-COD) that have Approved status → mark as paid
+-- Set our confirmed test order to 'paid' manually
 UPDATE orders
 SET payment_status = 'paid'
-WHERE "paymentMethod" != 'Cash on Delivery'
-  AND status = 'Approved'
-  AND payment_status = 'not_applicable';
+WHERE id = 'ZW-MSAWC5OX';
+
+-- Done! Verify with:
+-- SELECT id, "paymentMethod", payment_status, status FROM orders ORDER BY "createdAt" DESC LIMIT 20;
 
 -- Existing COD orders already have 'not_applicable' from DEFAULT above
 -- Done! Verify with:
