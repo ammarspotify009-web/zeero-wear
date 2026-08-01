@@ -85,7 +85,10 @@ export default async function handler(req, res) {
         if (newStatus) {
           const { error: updateError } = await supabase
             .from('orders')
-            .update({ status: newStatus })
+            .update({
+              status: newStatus,
+              payment_status: newStatus === 'Approved' ? 'paid' : 'failed'
+            })
             .eq('id', orderRef);
 
           if (updateError) {

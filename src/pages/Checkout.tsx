@@ -316,6 +316,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         customerAddress: form.address,
         city: form.city,
         paymentMethod: form.paymentMethod === 'cod' ? 'Cash on Delivery' : (form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash'),
+        payment_status: form.paymentMethod === 'cod' ? 'not_applicable' : 'paid', // card/jazzcash reach here only after successful confirmPayment
         subtotal: subtotal,
         deliveryFee: deliveryFee,
         totalAmount: total,

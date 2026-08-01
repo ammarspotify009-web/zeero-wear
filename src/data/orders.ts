@@ -8,7 +8,8 @@ export interface Order {
   customerEmail: string;
   customerAddress: string;
   city: string;
-  paymentMethod: string;
+  paymentMethod: string;           // 'Cash on Delivery' | 'Credit/Debit Card' | 'JazzCash'
+  payment_status: 'pending' | 'paid' | 'failed' | 'not_applicable'; // separate from order status
   subtotal: number;
   deliveryFee: number;
   totalAmount: number;

@@ -1787,6 +1787,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                           <span style={{ fontSize: '12px', color: 'var(--text-light)' }}>
                             {order.createdAt ? new Date(order.createdAt.endsWith('Z') || order.createdAt.includes('+') ? order.createdAt : order.createdAt + 'Z').toLocaleString('en-US', { timeZone: 'Asia/Karachi', year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : order.orderDate}
                           </span>
+                          {/* Payment Method Badge */}
+                          {order.paymentMethod && (
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '3px 10px',
+                              borderRadius: '50px',
+                              background: order.paymentMethod === 'Cash on Delivery' ? '#fff7ed' : '#eff6ff',
+                              color: order.paymentMethod === 'Cash on Delivery' ? '#c2410c' : '#1d4ed8',
+                              border: `1px solid ${order.paymentMethod === 'Cash on Delivery' ? '#fed7aa' : '#bfdbfe'}`,
+                              letterSpacing: '0.2px',
+                              flexShrink: 0
+                            }}>
+                              {order.paymentMethod === 'Cash on Delivery' ? '📦 COD' : '💳 Online'}
+                            </span>
+                          )}
+                          {/* Payment Status Badge */}
+                          {order.payment_status && order.payment_status !== 'not_applicable' && (
+                            <span style={{
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '3px 10px',
+                              borderRadius: '50px',
+                              background: order.payment_status === 'paid' ? '#f0fdf4' : '#fff1f2',
+                              color: order.payment_status === 'paid' ? '#15803d' : '#be123c',
+                              border: `1px solid ${order.payment_status === 'paid' ? '#bbf7d0' : '#fecdd3'}`,
+                              flexShrink: 0
+                            }}>
+                              {order.payment_status === 'paid' ? '✅ Paid' : '❌ Failed'}
+                            </span>
+                          )}
                         </div>
                         <span style={{
                           fontSize: '11.5px',
