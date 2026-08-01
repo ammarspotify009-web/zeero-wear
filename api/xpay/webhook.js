@@ -36,11 +36,16 @@ export default async function handler(req, res) {
 
     // Verify HMAC signature
     const calculatedSignature = crypto
-      .createHmac('SHA256', webhookSecret)
+      .createHmac('sha256', webhookSecret)
       .update(rawBody)
       .digest('hex');
 
-    if (calculatedSignature !== incomingSignature) {
+    // Prevent timing attacks using timingSafeEqual
+    const calculatedBuffer = Buffer.from(calculatedSignature, 'utf8');
+    const incomingBuffer = Buffer.from(incomingSignature, 'utf8');
+    
+    // Ensure both buffers have the same length before comparison to avoid thrown errors
+    if (calculatedBuffer.length !== incomingBuffer.length || !crypto.timingSafeEqual(calculatedBuffer, incomingBuffer)) {
       console.error('Webhook signature mismatch');
       return res.status(401).send('Invalid signature');
     }
