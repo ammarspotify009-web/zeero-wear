@@ -152,6 +152,13 @@ function AppContent() {
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isCheckoutRoute = location.pathname === '/checkout';
 
+  // Fire Facebook Pixel PageView on route change
+  useEffect(() => {
+    if (typeof (window as any).fbq === 'function') {
+      (window as any).fbq('track', 'PageView');
+    }
+  }, [location.pathname]);
+
   return (
     <>
       {!isAdminRoute && (
