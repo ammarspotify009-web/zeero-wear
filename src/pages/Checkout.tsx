@@ -26,7 +26,6 @@ type FormData = {
   city: string;
   notes: string;
   paymentMethod: 'cod' | 'card' | 'jazzcash' | 'easypaisa';
-  jazzcashNumber: string;
   easypaisaNumber: string;
 };
 
@@ -58,7 +57,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     city: '',
     notes: '',
     paymentMethod: 'cod' as const,
-    jazzcashNumber: '',
     easypaisaNumber: '',
   });
 
@@ -69,7 +67,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
     const initXpay = () => {
-      if (form.paymentMethod !== 'card') {
+      // Only skip if COD or Easypaisa (since XPay doesn't support them)
+      if (form.paymentMethod === 'cod' || form.paymentMethod === 'easypaisa') {
         xpayInitRef.current = false;
         setXpayInstances(null);
         return;
@@ -90,6 +89,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           xpayInitRef.current = true;
           
           const xpayCard = new window.Xpay(pubKey, accountId);
+          const xpayJazzcash = new window.Xpay(pubKey, accountId);
 
           const options = {
             override: true,
@@ -101,11 +101,14 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           };
           
           const cardEl = document.getElementById('card-element');
+          const jazzEl = document.getElementById('jazzcash-element');
           if (cardEl) cardEl.innerHTML = '';
+          if (jazzEl) jazzEl.innerHTML = '';
 
           xpayCard.element('#card-element', { ...options, paymentMethods: ['card'] });
+          xpayJazzcash.element('#jazzcash-element', { ...options, paymentMethods: ['jazzcash'] });
 
-          setXpayInstances({ card: xpayCard, jazzcash: null });
+          setXpayInstances({ card: xpayCard, jazzcash: xpayJazzcash });
         } catch (err) {
           console.error("XPay Element init error:", err);
           xpayInitRef.current = false;
@@ -211,13 +214,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
       return false;
     }
 
-    if (form.paymentMethod === 'jazzcash') {
-      if (!/^03\d{9}$/.test(form.jazzcashNumber)) {
-        setError("Please enter a valid 11-digit JazzCash mobile number (e.g. 03001234567).");
-        setIsLoading(false);
-        return false;
-      }
-    } else if (form.paymentMethod === 'easypaisa') {
+    if (form.paymentMethod === 'easypaisa') {
       if (!/^03\d{9}$/.test(form.easypaisaNumber)) {
         setError("Please enter a valid 11-digit Easypaisa mobile number (e.g. 03001234567).");
         setIsLoading(false);
@@ -284,7 +281,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
     try {
       const orderRef = `ZW-${Date.now().toString(36).toUpperCase()}`;
 
-      if (form.paymentMethod === 'card') {
+      if (form.paymentMethod === 'card' || form.paymentMethod === 'jazzcash') {
         if (!xpayInstances) {
           throw new Error("Payment system is initializing. Please wait a moment and try again.");
         }
@@ -302,7 +299,8 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
               name: form.fullName,
               phone: form.phone,
               email: form.email || "customer@zeerowear.com"
-            }
+            },
+            paymentMethodType: form.paymentMethod
           })
         });
         
@@ -316,7 +314,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         }
 
         // 2. Confirm Payment via SDK
-        const activeXpay = xpayInstances.card;
+        const activeXpay = form.paymentMethod === 'card' ? xpayInstances.card : xpayInstances.jazzcash;
         console.log("Calling confirmPayment with method:", form.paymentMethod);
         console.log("Client Secret:", intentData.clientSecret);
         
@@ -353,8 +351,8 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
             form.paymentMethod === 'jazzcash' ? 'JazzCash' : 'Easypaisa'
           )
         ),
-        payment_status: form.paymentMethod === 'cod' ? 'not_applicable' : (form.paymentMethod === 'card' ? 'paid' : 'pending'),
-        paymentPhoneNumber: form.paymentMethod === 'jazzcash' ? form.jazzcashNumber : (form.paymentMethod === 'easypaisa' ? form.easypaisaNumber : undefined),
+        payment_status: form.paymentMethod === 'cod' ? 'not_applicable' : (form.paymentMethod === 'easypaisa' ? 'pending' : 'paid'), // card/jazzcash reach here only after successful confirmPayment
+        paymentPhoneNumber: form.paymentMethod === 'easypaisa' ? form.easypaisaNumber : undefined,
         subtotal: subtotal,
         deliveryFee: deliveryFee,
         totalAmount: total,
@@ -394,7 +392,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           subtotal,
           deliveryFee,
           total,
-          paymentPhoneNumber: form.paymentMethod === 'jazzcash' ? form.jazzcashNumber : (form.paymentMethod === 'easypaisa' ? form.easypaisaNumber : undefined),
+          paymentPhoneNumber: form.paymentMethod === 'easypaisa' ? form.easypaisaNumber : undefined,
           notes: form.notes,
           orderText,
         }),
@@ -533,11 +531,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                     <p>Pay via JazzCash Wallet</p>
                   </div>
                 </label>
-                {form.paymentMethod === 'jazzcash' && (
-                  <div className="form-group" style={{ marginTop: '10px', marginBottom: '15px' }}>
-                    <input type="tel" name="jazzcashNumber" value={form.jazzcashNumber} onChange={handleChange} placeholder="03XX-XXXXXXX" className="form-input" required />
-                  </div>
-                )}
+                <div id="jazzcash-element" style={{ display: form.paymentMethod === 'jazzcash' ? 'block' : 'none', marginTop: '10px' }}></div>
 
                 <label className={`payment-option ${form.paymentMethod === 'easypaisa' ? 'selected' : ''}`}>
                   <input type="radio" name="paymentMethod" value="easypaisa" checked={form.paymentMethod === 'easypaisa'} onChange={handleChange} />

@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { amount, currency, customer, orderRef } = req.body;
+  const { amount, currency, customer, orderRef, paymentMethodType } = req.body;
 
   if (!amount || !currency || !customer) {
     return res.status(400).json({ error: 'Missing required fields' });
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   const payload = {
     amount: amount,
     currency: currency,
-    payment_method_types: "card",
+    payment_method_types: paymentMethodType || "card",
     customer: customer,
     shipping: {
       address1: "N/A",
