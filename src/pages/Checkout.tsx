@@ -178,14 +178,31 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
               innerPopup.appendChild(loadingOverlay);
               innerPopup.appendChild(closeBtn);
 
-              // Hide loader once the bank iframe fires its load event
-              const iframe = innerPopup.querySelector('iframe');
-              if (iframe) {
-                iframe.addEventListener('load', () => {
-                  const loader = document.getElementById('custom-3ds-loader');
-                  if (loader) loader.style.display = 'none';
-                }, { once: true });
+              // Helper: hide the loader overlay
+              const hideLoader = () => {
+                const loader = document.getElementById('custom-3ds-loader');
+                if (loader) loader.style.display = 'none';
+              };
+
+              // 1) Attach load listener to any iframe already present
+              const existingIframe = innerPopup.querySelector('iframe') as HTMLIFrameElement | null;
+              if (existingIframe) {
+                existingIframe.addEventListener('load', hideLoader, { once: true });
               }
+
+              // 2) Watch for iframe injected LATER by XPay SDK
+              const iframeObserver = new MutationObserver(() => {
+                const iframe = innerPopup.querySelector('iframe') as HTMLIFrameElement | null;
+                if (iframe) {
+                  iframe.addEventListener('load', hideLoader, { once: true });
+                  iframeObserver.disconnect();
+                }
+              });
+              iframeObserver.observe(innerPopup, { childList: true, subtree: true });
+
+              // 3) Fallback: always hide spinner after 3.5s
+              //    Cross-origin iframes (Mastercard 3DS) don't reliably fire load
+              setTimeout(hideLoader, 3500);
             }
           }
         }
