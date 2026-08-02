@@ -2834,7 +2834,7 @@ footer {
 }
 
 /* --- XPAY 3DS MODAL STYLING --- */
-.3ds-popup-main {
+[id="3ds-popup-main"], [class~="3ds-popup-main"] {
   background-color: rgba(0, 0, 0, 0.6) !important;
   backdrop-filter: blur(4px) !important;
   display: flex !important;

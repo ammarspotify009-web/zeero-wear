@@ -62,7 +62,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const xpayInitRef = React.useRef(false);
 
   React.useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
+    let timeoutId: ReturnType<typeof setTimeout>;
     
     const initXpay = () => {
       if (window.Xpay) {
