@@ -30,6 +30,8 @@ export const loadOrders = async (): Promise<Order[]> => {
     const { data, error } = await supabase
       .from('orders')
       .select('*')
+      .neq('status', 'Cancelled')
+      .neq('payment_status', 'failed')
       .order('createdAt', { ascending: false, nullsFirst: false });
 
     if (error) {
