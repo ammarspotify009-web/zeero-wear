@@ -69,7 +69,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
     const initXpay = () => {
-      // Only skip if COD or Easypaisa (since XPay doesn't support them)
+      // Skip XPay init for payment methods that don't use the SDK
       if (form.paymentMethod === 'cod' || form.paymentMethod === 'easypaisa') {
         xpayInitRef.current = false;
         setXpayInstances(null);
@@ -91,7 +91,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           xpayInitRef.current = true;
           
           const xpayCard = new window.Xpay(pubKey, accountId);
-          const xpayJazzcash = new window.Xpay(pubKey, accountId);
 
           const options = {
             override: true,
@@ -103,12 +102,18 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           };
           
           const cardEl = document.getElementById('card-element');
-          const jazzEl = document.getElementById('jazzcash-element');
           if (cardEl) cardEl.innerHTML = '';
-          if (jazzEl) jazzEl.innerHTML = '';
 
           xpayCard.element('#card-element', { ...options, paymentMethods: ['card'] });
-          xpayJazzcash.element('#jazzcash-element', { ...options, paymentMethods: ['jazzcash'] });
+
+          // Only mount jazzcash element if it exists in DOM (i.e. SHOW_JAZZCASH_EASYPAISA is true)
+          let xpayJazzcash: any = null;
+          const jazzEl = document.getElementById('jazzcash-element');
+          if (jazzEl) {
+            xpayJazzcash = new window.Xpay(pubKey, accountId);
+            jazzEl.innerHTML = '';
+            xpayJazzcash.element('#jazzcash-element', { ...options, paymentMethods: ['jazzcash'] });
+          }
 
           setXpayInstances({ card: xpayCard, jazzcash: xpayJazzcash });
         } catch (err) {
