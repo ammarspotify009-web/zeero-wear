@@ -31,6 +31,8 @@ type FormData = {
 
 
 
+const SHOW_JAZZCASH_EASYPAISA = false;
+
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<'form' | 'success'>('form');
@@ -523,28 +525,32 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                 </label>
                 <div id="card-element" style={{ display: form.paymentMethod === 'card' ? 'block' : 'none', marginTop: '10px' }}></div>
 
-                <label className={`payment-option ${form.paymentMethod === 'jazzcash' ? 'selected' : ''}`}>
-                  <input type="radio" name="paymentMethod" value="jazzcash" checked={form.paymentMethod === 'jazzcash'} onChange={handleChange} />
-                  <i className="fas fa-mobile-alt" />
-                  <div>
-                    <strong>JazzCash</strong>
-                    <p>Pay via JazzCash Wallet</p>
-                  </div>
-                </label>
-                <div id="jazzcash-element" style={{ display: form.paymentMethod === 'jazzcash' ? 'block' : 'none', marginTop: '10px' }}></div>
+                {SHOW_JAZZCASH_EASYPAISA && (
+                  <>
+                    <label className={`payment-option ${form.paymentMethod === 'jazzcash' ? 'selected' : ''}`}>
+                      <input type="radio" name="paymentMethod" value="jazzcash" checked={form.paymentMethod === 'jazzcash'} onChange={handleChange} />
+                      <i className="fas fa-mobile-alt" />
+                      <div>
+                        <strong>JazzCash</strong>
+                        <p>Pay via JazzCash Wallet</p>
+                      </div>
+                    </label>
+                    <div id="jazzcash-element" style={{ display: form.paymentMethod === 'jazzcash' ? 'block' : 'none', marginTop: '10px' }}></div>
 
-                <label className={`payment-option ${form.paymentMethod === 'easypaisa' ? 'selected' : ''}`}>
-                  <input type="radio" name="paymentMethod" value="easypaisa" checked={form.paymentMethod === 'easypaisa'} onChange={handleChange} />
-                  <i className="fas fa-mobile-alt" />
-                  <div>
-                    <strong>Easypaisa</strong>
-                    <p>Pay via Easypaisa Wallet</p>
-                  </div>
-                </label>
-                {form.paymentMethod === 'easypaisa' && (
-                  <div className="form-group" style={{ marginTop: '10px', marginBottom: '15px' }}>
-                    <input type="tel" name="easypaisaNumber" value={form.easypaisaNumber} onChange={handleChange} placeholder="03XX-XXXXXXX" className="form-input" required />
-                  </div>
+                    <label className={`payment-option ${form.paymentMethod === 'easypaisa' ? 'selected' : ''}`}>
+                      <input type="radio" name="paymentMethod" value="easypaisa" checked={form.paymentMethod === 'easypaisa'} onChange={handleChange} />
+                      <i className="fas fa-mobile-alt" />
+                      <div>
+                        <strong>Easypaisa</strong>
+                        <p>Pay via Easypaisa Wallet</p>
+                      </div>
+                    </label>
+                    {form.paymentMethod === 'easypaisa' && (
+                      <div className="form-group" style={{ marginTop: '10px', marginBottom: '15px' }}>
+                        <input type="tel" name="easypaisaNumber" value={form.easypaisaNumber} onChange={handleChange} placeholder="03XX-XXXXXXX" className="form-input" required />
+                      </div>
+                    )}
+                  </>
                 )}
               </div>
 
