@@ -137,8 +137,17 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
               setIsLoading(false);
               setError("Payment verification was cancelled.");
             };
+
+            const summaryEl = document.createElement('div');
+            summaryEl.className = 'custom-3ds-summary';
+            const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+            const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
+            const total = subtotal + deliveryFee;
+            summaryEl.innerText = `Aap Rs. ${total.toLocaleString()} pay kar rahe hain — Zeero Wear`;
+
             const innerPopup = document.getElementById('threeDsPopup');
             if (innerPopup) {
+              innerPopup.prepend(summaryEl);
               innerPopup.appendChild(closeBtn);
             }
           }
@@ -148,7 +157,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     
     observer.observe(document.body, { childList: true, subtree: true });
     return () => observer.disconnect();
-  }, [step]);
+  }, [step, cartItems]);
 
   React.useEffect(() => {
     // Only save if some contact info is filled
