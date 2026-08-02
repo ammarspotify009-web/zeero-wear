@@ -25,7 +25,9 @@ type FormData = {
   address: string;
   city: string;
   notes: string;
-  paymentMethod: 'cod' | 'card' | 'jazzcash';
+  paymentMethod: 'cod' | 'card' | 'jazzcash' | 'easypaisa';
+  jazzcashNumber: string;
+  easypaisaNumber: string;
 };
 
 
@@ -56,6 +58,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     city: '',
     notes: '',
     paymentMethod: 'cod' as const,
+    jazzcashNumber: '',
+    easypaisaNumber: '',
   });
 
   const [xpayInstances, setXpayInstances] = useState<{card: any, jazzcash: any} | null>(null);
@@ -65,6 +69,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
     const initXpay = () => {
+      if (form.paymentMethod !== 'card') {
+        xpayInitRef.current = false;
+        setXpayInstances(null);
+        return;
+      }
+
       if (window.Xpay) {
         if (xpayInitRef.current) return;
         
@@ -79,9 +89,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
 
           xpayInitRef.current = true;
           
-          // XPay SDK only requires publishable credentials
           const xpayCard = new window.Xpay(pubKey, accountId);
-          const xpayJazzcash = new window.Xpay(pubKey, accountId);
 
           const options = {
             override: true,
@@ -92,16 +100,12 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
             },
           };
           
-          // Clear any existing iframes (useful for HMR)
           const cardEl = document.getElementById('card-element');
-          const jazzEl = document.getElementById('jazzcash-element');
           if (cardEl) cardEl.innerHTML = '';
-          if (jazzEl) jazzEl.innerHTML = '';
 
           xpayCard.element('#card-element', { ...options, paymentMethods: ['card'] });
-          xpayJazzcash.element('#jazzcash-element', { ...options, paymentMethods: ['jazzcash'] });
 
-          setXpayInstances({ card: xpayCard, jazzcash: xpayJazzcash });
+          setXpayInstances({ card: xpayCard, jazzcash: null });
         } catch (err) {
           console.error("XPay Element init error:", err);
           xpayInitRef.current = false;
@@ -110,13 +114,13 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
         timeoutId = setTimeout(initXpay, 500);
       }
     };
-    
+
     if (step === 'form') {
       initXpay();
     }
     
     return () => clearTimeout(timeoutId);
-  }, [step]);
+  }, [step, form.paymentMethod]);
 
   // ── 3DS Modal Customizer & Close Button ──
   React.useEffect(() => {
@@ -201,6 +205,26 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const validate = (): boolean => {
     if (!form.fullName.trim()) { setError('Full name is required.'); return false; }
     if (!form.phone.trim()) { setError('Phone number is required.'); return false; }
+    if (!form.fullName || !form.phone || !form.address || !form.city) {
+      setError("Please fill in all required fields.");
+      setIsLoading(false);
+      return false;
+    }
+
+    if (form.paymentMethod === 'jazzcash') {
+      if (!/^03\d{9}$/.test(form.jazzcashNumber)) {
+        setError("Please enter a valid 11-digit JazzCash mobile number (e.g. 03001234567).");
+        setIsLoading(false);
+        return false;
+      }
+    } else if (form.paymentMethod === 'easypaisa') {
+      if (!/^03\d{9}$/.test(form.easypaisaNumber)) {
+        setError("Please enter a valid 11-digit Easypaisa mobile number (e.g. 03001234567).");
+        setIsLoading(false);
+        return false;
+      }
+    }
+    
     if (!/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())) {
       setError('Please enter a valid phone number.');
       return false;
@@ -260,7 +284,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
     try {
       const orderRef = `ZW-${Date.now().toString(36).toUpperCase()}`;
 
-      if (form.paymentMethod !== 'cod') {
+      if (form.paymentMethod === 'card') {
         if (!xpayInstances) {
           throw new Error("Payment system is initializing. Please wait a moment and try again.");
         }
@@ -292,7 +316,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         }
 
         // 2. Confirm Payment via SDK
-        const activeXpay = form.paymentMethod === 'card' ? xpayInstances.card : xpayInstances.jazzcash;
+        const activeXpay = xpayInstances.card;
         console.log("Calling confirmPayment with method:", form.paymentMethod);
         console.log("Client Secret:", intentData.clientSecret);
         
@@ -324,8 +348,13 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         customerEmail: form.email || '',
         customerAddress: form.address,
         city: form.city,
-        paymentMethod: form.paymentMethod === 'cod' ? 'Cash on Delivery' : (form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash'),
-        payment_status: form.paymentMethod === 'cod' ? 'not_applicable' : 'paid', // card/jazzcash reach here only after successful confirmPayment
+        paymentMethod: form.paymentMethod === 'cod' ? 'Cash on Delivery' : (
+          form.paymentMethod === 'card' ? 'Credit/Debit Card' : (
+            form.paymentMethod === 'jazzcash' ? 'JazzCash' : 'Easypaisa'
+          )
+        ),
+        payment_status: form.paymentMethod === 'cod' ? 'not_applicable' : (form.paymentMethod === 'card' ? 'paid' : 'pending'),
+        paymentPhoneNumber: form.paymentMethod === 'jazzcash' ? form.jazzcashNumber : (form.paymentMethod === 'easypaisa' ? form.easypaisaNumber : undefined),
         subtotal: subtotal,
         deliveryFee: deliveryFee,
         totalAmount: total,
@@ -356,11 +385,16 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           phone: form.phone,
           email: form.email,
           address: `${form.address}, ${form.city}`,
-          paymentMethod: form.paymentMethod === 'cod' ? 'Cash on Delivery' : (form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash'),
+          paymentMethod: form.paymentMethod === 'cod' ? 'Cash on Delivery' : (
+            form.paymentMethod === 'card' ? 'Credit/Debit Card' : (
+              form.paymentMethod === 'jazzcash' ? 'JazzCash' : 'Easypaisa'
+            )
+          ),
           items: cartItems,
           subtotal,
           deliveryFee,
           total,
+          paymentPhoneNumber: form.paymentMethod === 'jazzcash' ? form.jazzcashNumber : (form.paymentMethod === 'easypaisa' ? form.easypaisaNumber : undefined),
           notes: form.notes,
           orderText,
         }),
@@ -422,7 +456,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
             Our team will contact you at <strong>{form.phone}</strong> to confirm delivery.
           </p>
           <div className="success-summary-box">
-            <div className="success-row"><span>Payment</span><span>{form.paymentMethod === 'cod' ? 'Cash on Delivery' : (form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash')}</span></div>
+            <div className="success-row"><span>Payment</span><span>{form.paymentMethod === 'cod' ? 'Cash on Delivery' : (form.paymentMethod === 'card' ? 'Credit/Debit Card' : (form.paymentMethod === 'jazzcash' ? 'JazzCash' : 'Easypaisa'))}</span></div>
             <div className="success-row"><span>Items</span><span>{completedStats.totalItems} item{completedStats.totalItems > 1 ? 's' : ''}</span></div>
             <div className="success-row"><span>Order Total</span><span>Rs. {completedStats.total.toLocaleString()}</span></div>
           </div>
@@ -499,7 +533,25 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                     <p>Pay via JazzCash Wallet</p>
                   </div>
                 </label>
-                <div id="jazzcash-element" style={{ display: form.paymentMethod === 'jazzcash' ? 'block' : 'none', marginTop: '10px' }}></div>
+                {form.paymentMethod === 'jazzcash' && (
+                  <div className="form-group" style={{ marginTop: '10px', marginBottom: '15px' }}>
+                    <input type="tel" name="jazzcashNumber" value={form.jazzcashNumber} onChange={handleChange} placeholder="03XX-XXXXXXX" className="form-input" required />
+                  </div>
+                )}
+
+                <label className={`payment-option ${form.paymentMethod === 'easypaisa' ? 'selected' : ''}`}>
+                  <input type="radio" name="paymentMethod" value="easypaisa" checked={form.paymentMethod === 'easypaisa'} onChange={handleChange} />
+                  <i className="fas fa-mobile-alt" />
+                  <div>
+                    <strong>Easypaisa</strong>
+                    <p>Pay via Easypaisa Wallet</p>
+                  </div>
+                </label>
+                {form.paymentMethod === 'easypaisa' && (
+                  <div className="form-group" style={{ marginTop: '10px', marginBottom: '15px' }}>
+                    <input type="tel" name="easypaisaNumber" value={form.easypaisaNumber} onChange={handleChange} placeholder="03XX-XXXXXXX" className="form-input" required />
+                  </div>
+                )}
               </div>
 
               <div className="form-group" style={{ marginTop: '20px' }}>

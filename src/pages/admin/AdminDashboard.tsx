@@ -1869,6 +1869,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                           <i className="fas fa-phone-alt" style={{ width: '16px', color: 'var(--accent2)', fontSize: '12px' }}></i>
                           <span style={{ color: 'var(--text)' }}>{order.customerPhone}</span>
                         </div>
+                        {order.paymentPhoneNumber && (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', background: '#fdf8f6', padding: '4px 8px', borderRadius: '4px', border: '1px dashed #fdba74', width: 'fit-content' }}>
+                            <i className="fas fa-mobile-alt" style={{ width: '16px', color: '#ea580c', fontSize: '12px' }}></i>
+                            <span style={{ color: '#c2410c', fontWeight: 600 }}>Payment No: {order.paymentPhoneNumber}</span>
+                          </div>
+                        )}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px' }}>
                           <i className="fas fa-envelope" style={{ width: '16px', color: 'var(--accent)', fontSize: '12px' }}></i>
                           <span style={{ color: 'var(--text)' }}>{order.customerEmail}</span>
