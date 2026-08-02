@@ -374,15 +374,49 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
             intentData.encryptionKey
           );
           console.log("confirmPayment result:", confirmResult);
-        } catch (sdkError) {
-          console.error("Exception thrown by activeXpay.confirmPayment:", sdkError);
-          throw sdkError;
-        }
-        
-        const { error, message } = confirmResult;
-        if (error || (message && message.toLowerCase().includes('fail'))) {
-           console.error("Payment declined by SDK. Error flag:", error, "Message:", message);
-           throw new Error(message || "Payment declined");
+          
+          const { error, message } = confirmResult || {};
+          if (error || (message && message.toLowerCase().includes('fail'))) {
+             console.error("Payment declined by SDK. Error flag:", error, "Message:", message);
+             throw { isPaymentDecline: true, raw: confirmResult, message: message || "Payment declined" };
+          }
+        } catch (sdkError: any) {
+          console.error("Exception in activeXpay.confirmPayment block:", sdkError);
+          
+          // Parse the error message
+          let parsedMsg = "Something went wrong. Please try again or contact support.";
+          if (sdkError?.message) parsedMsg = sdkError.message;
+          else if (sdkError?.error && typeof sdkError.error === 'string') parsedMsg = sdkError.error;
+          else if (typeof sdkError === 'string') parsedMsg = sdkError;
+
+          // User-friendly overrides for declines
+          const lowerMsg = parsedMsg.toLowerCase();
+          if (lowerMsg.includes('decline') || lowerMsg.includes('insufficient') || lowerMsg.includes('fraud') || lowerMsg.includes('invalid') || lowerMsg.includes('do not honour')) {
+              parsedMsg = "Your card was declined. Please check your card details or try a different payment method.";
+          }
+
+          // Log the failed attempt to Supabase for tracking
+          const failedOrder: Order = {
+            id: orderRef,
+            customerName: form.fullName,
+            customerPhone: form.phone,
+            customerEmail: form.email || '',
+            customerAddress: form.address,
+            city: form.city,
+            paymentMethod: form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash',
+            payment_status: 'failed',
+            subtotal: subtotal,
+            deliveryFee: deliveryFee,
+            totalAmount: total,
+            items: cartItems,
+            notes: form.notes,
+            status: 'Cancelled', // Mark as Cancelled/Failed so admin knows it didn't go through
+            orderDate: getPKTDateString()
+          };
+          addOrderToSupabase(failedOrder).catch(e => console.error("Failed to log failed order", e));
+
+          // Throw standard Error so the outer catch block displays it nicely to the user
+          throw new Error(parsedMsg);
         }
       }
       
