@@ -141,28 +141,51 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
         if (mutation.addedNodes.length) {
           const popup = document.getElementById('3ds-popup-main');
           if (popup && !document.getElementById('custom-3ds-close')) {
+
+            // ── Close Button ──
             const closeBtn = document.createElement('button');
             closeBtn.id = 'custom-3ds-close';
             closeBtn.className = 'custom-3ds-close';
-            closeBtn.innerHTML = '&times;';
+            closeBtn.innerHTML = '&#x2715;';
             closeBtn.title = 'Cancel Verification';
+            closeBtn.setAttribute('aria-label', 'Cancel payment verification');
             closeBtn.onclick = () => {
               popup.remove();
               setIsLoading(false);
               setError("Payment verification was cancelled.");
             };
 
+            // ── Amount Summary Bar ──
             const summaryEl = document.createElement('div');
             summaryEl.className = 'custom-3ds-summary';
             const subtotal = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
             const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
             const total = subtotal + deliveryFee;
-            summaryEl.innerText = `Aap Rs. ${total.toLocaleString()} pay kar rahe hain — Zeero Wear`;
+            summaryEl.innerHTML = `<span class="custom-3ds-lock">&#128274;</span> You're paying <strong>Rs. ${total.toLocaleString()}</strong> to Zeero Wear`;
+
+            // ── Loading Overlay (hidden once iframe fires load) ──
+            const loadingOverlay = document.createElement('div');
+            loadingOverlay.id = 'custom-3ds-loader';
+            loadingOverlay.className = 'custom-3ds-loader';
+            loadingOverlay.innerHTML = `
+              <div class="custom-3ds-spinner"></div>
+              <p class="custom-3ds-loader-text">Redirecting to your bank for verification…</p>
+            `;
 
             const innerPopup = document.getElementById('threeDsPopup');
             if (innerPopup) {
               innerPopup.prepend(summaryEl);
+              innerPopup.appendChild(loadingOverlay);
               innerPopup.appendChild(closeBtn);
+
+              // Hide loader once the bank iframe fires its load event
+              const iframe = innerPopup.querySelector('iframe');
+              if (iframe) {
+                iframe.addEventListener('load', () => {
+                  const loader = document.getElementById('custom-3ds-loader');
+                  if (loader) loader.style.display = 'none';
+                }, { once: true });
+              }
             }
           }
         }
