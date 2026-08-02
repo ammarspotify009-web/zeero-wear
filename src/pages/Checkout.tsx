@@ -410,7 +410,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
             totalAmount: total,
             items: cartItems,
             notes: form.notes,
-            status: 'Cancelled', // Mark as Cancelled/Failed so admin knows it didn't go through
+            status: 'Payment Failed', // Distinct status for automatic declines
             orderDate: getPKTDateString()
           };
           addOrderToSupabase(failedOrder).catch(e => console.error("Failed to log failed order", e));

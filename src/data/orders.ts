@@ -16,7 +16,7 @@ export interface Order {
   totalAmount: number;
   items: CartItem[];
   notes: string;
-  status: 'Pending' | 'Approved' | 'Cancelled';
+  status: 'Pending' | 'Approved' | 'Cancelled' | 'Payment Failed';
   orderDate: string;
   createdAt?: string;
 }
@@ -30,8 +30,7 @@ export const loadOrders = async (): Promise<Order[]> => {
     const { data, error } = await supabase
       .from('orders')
       .select('*')
-      .neq('status', 'Cancelled')
-      .neq('payment_status', 'failed')
+      .neq('status', 'Payment Failed')
       .order('createdAt', { ascending: false, nullsFirst: false });
 
     if (error) {
