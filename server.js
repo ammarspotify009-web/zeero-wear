@@ -37,16 +37,18 @@ const transporter = nodemailer.createTransport({
 const otps = new Map();
 
 app.post('/api/create-payment-intent', async (req, res) => {
-  const { amount, currency, customer, orderRef } = req.body;
+  const { amount, currency, customer, orderRef, paymentMethodType } = req.body;
   
   if (!amount || !currency || !customer) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  const payment_method_types = paymentMethodType === 'jazzcash' ? 'jazzcash-wallet' : 'card';
+
   const payload = {
     amount: amount,
     currency: currency,
-    payment_method_types: "card",
+    payment_method_types: payment_method_types,
     customer: customer,
     shipping: {
       address1: "N/A",

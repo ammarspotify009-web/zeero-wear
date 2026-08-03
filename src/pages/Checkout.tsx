@@ -31,8 +31,8 @@ type FormData = {
 
 
 
-const SHOW_JAZZCASH_EASYPAISA = false;
-
+const SHOW_JAZZCASH = true;
+const SHOW_EASYPAISA = false;
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<'form' | 'success'>('form');
@@ -106,7 +106,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
 
           xpayCard.element('#card-element', { ...options, paymentMethods: ['card'] });
 
-          // Only mount jazzcash element if it exists in DOM (i.e. SHOW_JAZZCASH_EASYPAISA is true)
+          // Only mount jazzcash element if it exists in DOM (i.e. SHOW_JAZZCASH is true)
           let xpayJazzcash: any = null;
           const jazzEl = document.getElementById('jazzcash-element');
           if (jazzEl) {
@@ -604,7 +604,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                 </label>
                 <div id="card-element" style={{ display: form.paymentMethod === 'card' ? 'block' : 'none', marginTop: '10px' }}></div>
 
-                {SHOW_JAZZCASH_EASYPAISA && (
+                {SHOW_JAZZCASH && (
                   <>
                     <label className={`payment-option ${form.paymentMethod === 'jazzcash' ? 'selected' : ''}`}>
                       <input type="radio" name="paymentMethod" value="jazzcash" checked={form.paymentMethod === 'jazzcash'} onChange={handleChange} />
@@ -615,7 +615,11 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                       </div>
                     </label>
                     <div id="jazzcash-element" style={{ display: form.paymentMethod === 'jazzcash' ? 'block' : 'none', marginTop: '10px' }}></div>
+                  </>
+                )}
 
+                {SHOW_EASYPAISA && (
+                  <>
                     <label className={`payment-option ${form.paymentMethod === 'easypaisa' ? 'selected' : ''}`}>
                       <input type="radio" name="paymentMethod" value="easypaisa" checked={form.paymentMethod === 'easypaisa'} onChange={handleChange} />
                       <i className="fas fa-mobile-alt" />
