@@ -370,7 +370,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           confirmResult = await activeXpay.confirmPayment(
             form.paymentMethod,
             intentData.clientSecret,
-            { name: form.fullName, email: form.email || "customer@zeerowear.com", phone: form.phone },
+            { name: form.fullName, email: form.email || "customer@zeerowear.com", phone: form.phone, TxnRefNo: orderRef.replace(/[^a-zA-Z0-9]/g, '') },
             intentData.encryptionKey
           );
           console.log("confirmPayment result:", confirmResult);
