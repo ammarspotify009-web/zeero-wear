@@ -11,10 +11,12 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
 
+  const payment_method_types = paymentMethodType === 'jazzcash' ? 'bank' : 'card';
+
   const payload = {
     amount: amount,
     currency: currency,
-    payment_method_types: paymentMethodType || "card",
+    payment_method_types: payment_method_types,
     customer: customer,
     shipping: {
       address1: "N/A",
