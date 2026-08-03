@@ -367,10 +367,24 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         
         let confirmResult;
         try {
+          const paymentOptions = {
+            name: form.fullName, 
+            email: form.email || "customer@zeerowear.com", 
+            phone: form.phone,
+            TxnRefNo: orderRef.replace(/[^a-zA-Z0-9]/g, ''),
+            wallet: {
+              TxnRefNo: orderRef.replace(/[^a-zA-Z0-9]/g, '')
+            },
+            jazzcash: {
+              TxnRefNo: orderRef.replace(/[^a-zA-Z0-9]/g, '')
+            }
+          };
+          console.log("🚀 PAYLOAD to confirmPayment:", JSON.stringify({ method: form.paymentMethod, clientSecret: intentData.clientSecret, options: paymentOptions }, null, 2));
+
           confirmResult = await activeXpay.confirmPayment(
             form.paymentMethod,
             intentData.clientSecret,
-            { name: form.fullName, email: form.email || "customer@zeerowear.com", phone: form.phone, TxnRefNo: orderRef.replace(/[^a-zA-Z0-9]/g, '') },
+            paymentOptions,
             intentData.encryptionKey
           );
           console.log("confirmPayment result:", confirmResult);
