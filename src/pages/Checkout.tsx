@@ -366,68 +366,90 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         console.log("Client Secret:", intentData.clientSecret);
         
         let confirmResult;
-        try {
-          const txnRef = `TXN${new Date().toISOString().slice(0,10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`;
-          const paymentOptions = {
-            name: form.fullName, 
-            email: form.email || "customer@zeerowear.com", 
-            phone: form.phone,
-            TxnRefNo: txnRef
-          };
-          console.log("🚀 PAYLOAD to confirmPayment:", JSON.stringify({ method: form.paymentMethod, clientSecret: intentData.clientSecret, options: paymentOptions }, null, 2));
+        let attempt = 0;
+        const maxAttempts = 3;
 
-          confirmResult = await activeXpay.confirmPayment(
-            form.paymentMethod,
-            intentData.clientSecret,
-            paymentOptions,
-            intentData.encryptionKey
-          );
-          console.log("confirmPayment result:", confirmResult);
-          
-          const { error, message } = confirmResult || {};
-          if (error || (message && message.toLowerCase().includes('fail'))) {
-             console.error("XSTAK_ERROR_RESPONSE_CAPTURE:", JSON.stringify(confirmResult, null, 2));
-             console.error("Payment declined by SDK. Error flag:", error, "Message:", message);
-             throw { isPaymentDecline: true, raw: confirmResult, message: message || "Payment declined" };
+        while (attempt < maxAttempts) {
+          attempt++;
+          try {
+            const txnRef = `TXN${new Date().toISOString().slice(0,10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`;
+            const paymentOptions = {
+              name: form.fullName, 
+              email: form.email || "customer@zeerowear.com", 
+              phone: form.phone,
+              TxnRefNo: txnRef
+            };
+            console.log(`[Attempt ${attempt}/${maxAttempts}] 🚀 PAYLOAD to confirmPayment:`, JSON.stringify({ method: form.paymentMethod, clientSecret: intentData.clientSecret, options: paymentOptions }, null, 2));
+
+            const reqStartTime = performance.now();
+            console.log(`[Attempt ${attempt}] Request started at: ${new Date().toISOString()}`);
+
+            confirmResult = await activeXpay.confirmPayment(
+              form.paymentMethod,
+              intentData.clientSecret,
+              paymentOptions,
+              intentData.encryptionKey
+            );
+            
+            const reqEndTime = performance.now();
+            console.log(`[Attempt ${attempt}] Request completed in ${(reqEndTime - reqStartTime).toFixed(2)} ms`);
+            console.log(`[Attempt ${attempt}] confirmPayment result:`, confirmResult);
+            
+            const { error, message } = confirmResult || {};
+            if (error || (message && message.toLowerCase().includes('fail'))) {
+               console.error(`[Attempt ${attempt}] XSTAK_ERROR_RESPONSE_CAPTURE:`, JSON.stringify(confirmResult, null, 2));
+               console.error(`[Attempt ${attempt}] Payment declined by SDK. Error flag:`, error, "Message:", message);
+               throw { isPaymentDecline: true, raw: confirmResult, message: message || "Payment declined" };
+            }
+            
+            // Success, break out of loop
+            break;
+            
+          } catch (sdkError: any) {
+            const isDecline = sdkError?.isPaymentDecline;
+            console.error(`[Attempt ${attempt}] XSTAK_ERROR_RESPONSE_CAPTURE:`, JSON.stringify(sdkError, null, 2));
+            console.error(`[Attempt ${attempt}] Exception in activeXpay.confirmPayment block:`, sdkError);
+            
+            if (isDecline || attempt >= maxAttempts) {
+              // Parse the error message
+              let parsedMsg = "Something went wrong. Please try again or contact support.";
+              if (sdkError?.message) parsedMsg = sdkError.message;
+              else if (sdkError?.error && typeof sdkError.error === 'string') parsedMsg = sdkError.error;
+              else if (typeof sdkError === 'string') parsedMsg = sdkError;
+
+              // User-friendly overrides for declines
+              const lowerMsg = parsedMsg.toLowerCase();
+              if (lowerMsg.includes('decline') || lowerMsg.includes('insufficient') || lowerMsg.includes('fraud') || lowerMsg.includes('invalid') || lowerMsg.includes('do not honour')) {
+                  parsedMsg = "Your card was declined. Please check your card details or try a different payment method.";
+              }
+
+              // Log the failed attempt to Supabase for tracking
+              const failedOrder: Order = {
+                id: orderRef,
+                customerName: form.fullName,
+                customerPhone: form.phone,
+                customerEmail: form.email || '',
+                customerAddress: form.address,
+                city: form.city,
+                paymentMethod: form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash',
+                payment_status: 'failed',
+                subtotal: subtotal,
+                deliveryFee: deliveryFee,
+                totalAmount: total,
+                items: cartItems,
+                notes: form.notes,
+                status: 'Payment Failed', // Distinct status for automatic declines
+                orderDate: getPKTDateString()
+              };
+              addOrderToSupabase(failedOrder).catch(e => console.error("Failed to log failed order", e));
+
+              // Throw standard Error so the outer catch block displays it nicely to the user
+              throw new Error(parsedMsg);
+            } else {
+              console.warn(`[Attempt ${attempt}] Request failed (ECONNRESET or other network issue). Retrying in 3 seconds...`);
+              await new Promise(resolve => setTimeout(resolve, 3000));
+            }
           }
-        } catch (sdkError: any) {
-          console.error("XSTAK_ERROR_RESPONSE_CAPTURE:", JSON.stringify(sdkError, null, 2));
-          console.error("Exception in activeXpay.confirmPayment block:", sdkError);
-          
-          // Parse the error message
-          let parsedMsg = "Something went wrong. Please try again or contact support.";
-          if (sdkError?.message) parsedMsg = sdkError.message;
-          else if (sdkError?.error && typeof sdkError.error === 'string') parsedMsg = sdkError.error;
-          else if (typeof sdkError === 'string') parsedMsg = sdkError;
-
-          // User-friendly overrides for declines
-          const lowerMsg = parsedMsg.toLowerCase();
-          if (lowerMsg.includes('decline') || lowerMsg.includes('insufficient') || lowerMsg.includes('fraud') || lowerMsg.includes('invalid') || lowerMsg.includes('do not honour')) {
-              parsedMsg = "Your card was declined. Please check your card details or try a different payment method.";
-          }
-
-          // Log the failed attempt to Supabase for tracking
-          const failedOrder: Order = {
-            id: orderRef,
-            customerName: form.fullName,
-            customerPhone: form.phone,
-            customerEmail: form.email || '',
-            customerAddress: form.address,
-            city: form.city,
-            paymentMethod: form.paymentMethod === 'card' ? 'Credit/Debit Card' : 'JazzCash',
-            payment_status: 'failed',
-            subtotal: subtotal,
-            deliveryFee: deliveryFee,
-            totalAmount: total,
-            items: cartItems,
-            notes: form.notes,
-            status: 'Payment Failed', // Distinct status for automatic declines
-            orderDate: getPKTDateString()
-          };
-          addOrderToSupabase(failedOrder).catch(e => console.error("Failed to log failed order", e));
-
-          // Throw standard Error so the outer catch block displays it nicely to the user
-          throw new Error(parsedMsg);
         }
       }
       
