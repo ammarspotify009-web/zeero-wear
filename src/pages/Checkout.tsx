@@ -367,17 +367,12 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         
         let confirmResult;
         try {
+          const txnRef = `TXN${new Date().toISOString().slice(0,10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`;
           const paymentOptions = {
             name: form.fullName, 
             email: form.email || "customer@zeerowear.com", 
             phone: form.phone,
-            TxnRefNo: orderRef.replace(/[^a-zA-Z0-9]/g, ''),
-            wallet: {
-              TxnRefNo: orderRef.replace(/[^a-zA-Z0-9]/g, '')
-            },
-            jazzcash: {
-              TxnRefNo: orderRef.replace(/[^a-zA-Z0-9]/g, '')
-            }
+            TxnRefNo: txnRef
           };
           console.log("🚀 PAYLOAD to confirmPayment:", JSON.stringify({ method: form.paymentMethod, clientSecret: intentData.clientSecret, options: paymentOptions }, null, 2));
 
@@ -391,10 +386,12 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           
           const { error, message } = confirmResult || {};
           if (error || (message && message.toLowerCase().includes('fail'))) {
+             console.error("XSTAK_ERROR_RESPONSE_CAPTURE:", JSON.stringify(confirmResult, null, 2));
              console.error("Payment declined by SDK. Error flag:", error, "Message:", message);
              throw { isPaymentDecline: true, raw: confirmResult, message: message || "Payment declined" };
           }
         } catch (sdkError: any) {
+          console.error("XSTAK_ERROR_RESPONSE_CAPTURE:", JSON.stringify(sdkError, null, 2));
           console.error("Exception in activeXpay.confirmPayment block:", sdkError);
           
           // Parse the error message
