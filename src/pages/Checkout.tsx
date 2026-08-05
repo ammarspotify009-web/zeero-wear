@@ -39,6 +39,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const [completedStats, setCompletedStats] = useState({ total: 0, totalItems: 0 });
+  const [isPaymentElementComplete, setIsPaymentElementComplete] = useState(false);
 
   // Scroll to top when page loads and fire InitiateCheckout event
   React.useEffect(() => {
@@ -119,6 +120,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           }
 
           setXpayInstances({ card: xpayCard, jazzcash: xpayJazzcash });
+          // Mark element as mounted — SDK handles its own internal field validation
+          setIsPaymentElementComplete(true);
           console.log("[XPay v5] SDK initialized successfully");
         } catch (err) {
           console.error("[XPay v5] Element init error:", err);
@@ -255,6 +258,16 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
     setError('');
+    if (name === 'paymentMethod') {
+      // Reset to false only for non-SDK methods; for card/jazzcash, the element
+      // is already mounted (both are initialized together), so keep it enabled.
+      if (value === 'cod' || value === 'easypaisa') {
+        setIsPaymentElementComplete(false);
+      } else if (value === 'card' || value === 'jazzcash') {
+        // Element is already mounted if xpayInitRef is true; keep button enabled
+        setIsPaymentElementComplete(xpayInitRef.current);
+      }
+    }
   };
 
   const validate = (): boolean => {
@@ -377,11 +390,6 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         while (attempt < maxAttempts) {
           attempt++;
           try {
-            // TxnRefNo is required by XPay API even in v5 (docs omit it but API enforces it)
-            const txnDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const txnRand = Math.floor(1000 + Math.random() * 9000);
-            const txnRefNo = `TXN${txnDate}${txnRand}`;
-
             const confirmOptions = {
               paymentMethodType: form.paymentMethod,
               clientSecret: intentData.clientSecret,
@@ -390,7 +398,6 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                 email: form.email || "customer@zeerowear.com",
                 phone: form.phone
               },
-              TxnRefNo: txnRefNo,
               encryptionKey: intentData.encryptionKey
             };
             console.log(`[Attempt ${attempt}/${maxAttempts}] 🚀 PAYLOAD to confirmPayment:`, JSON.stringify(confirmOptions, null, 2));
@@ -686,7 +693,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
               {error && <div className="checkout-error"><i className="fas fa-exclamation-circle" /> {error}</div>}
 
-              <button type="submit" className="btn-primary btn-block checkout-submit" disabled={isLoading}>
+              <button type="submit" className="btn-primary btn-block checkout-submit" disabled={isLoading || ((form.paymentMethod === 'card' || form.paymentMethod === 'jazzcash') && !isPaymentElementComplete)}>
                 {isLoading ? <><i className="fas fa-spinner fa-spin" /> Placing…</> : <><i className="fas fa-check" /> Place Order</>}
               </button>
             </form>
