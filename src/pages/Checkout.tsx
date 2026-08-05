@@ -90,7 +90,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
 
           xpayInitRef.current = true;
           
-          const xpayCard = new window.Xpay(pubKey, accountId);
+          const xpayCard = new window.Xpay({
+            publishableKey: pubKey,
+            accountId: accountId
+          });
 
           const options = {
             override: true,
@@ -110,7 +113,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           let xpayJazzcash: any = null;
           const jazzEl = document.getElementById('jazzcash-element');
           if (jazzEl) {
-            xpayJazzcash = new window.Xpay(pubKey, accountId);
+            xpayJazzcash = new window.Xpay({
+              publishableKey: pubKey,
+              accountId: accountId
+            });
             jazzEl.innerHTML = '';
             xpayJazzcash.element('#jazzcash-element', { ...options, paymentMethods: ['jazzcash'] });
           }
@@ -372,24 +378,23 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         while (attempt < maxAttempts) {
           attempt++;
           try {
-            const txnRef = `TXN${new Date().toISOString().slice(0,10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`;
-            const paymentOptions = {
-              name: form.fullName, 
-              email: form.email || "customer@zeerowear.com", 
-              phone: form.phone,
-              TxnRefNo: txnRef
+            // NOTE: We intentionally omit TxnRefNo here as per the v5 migration test
+            const confirmOptions = {
+              paymentMethodType: form.paymentMethod,
+              clientSecret: intentData.clientSecret,
+              customer: {
+                name: form.fullName,
+                email: form.email || "customer@zeerowear.com",
+                phone: form.phone
+              },
+              encryptionKey: intentData.encryptionKey
             };
-            console.log(`[Attempt ${attempt}/${maxAttempts}] 🚀 PAYLOAD to confirmPayment:`, JSON.stringify({ method: form.paymentMethod, clientSecret: intentData.clientSecret, options: paymentOptions }, null, 2));
+            console.log(`[Attempt ${attempt}/${maxAttempts}] 🚀 PAYLOAD to confirmPayment:`, JSON.stringify(confirmOptions, null, 2));
 
             const reqStartTime = performance.now();
             console.log(`[Attempt ${attempt}] Request started at: ${new Date().toISOString()}`);
 
-            confirmResult = await activeXpay.confirmPayment(
-              form.paymentMethod,
-              intentData.clientSecret,
-              paymentOptions,
-              intentData.encryptionKey
-            );
+            confirmResult = await activeXpay.confirmPayment(confirmOptions);
             
             const reqEndTime = performance.now();
             console.log(`[Attempt ${attempt}] Request completed in ${(reqEndTime - reqStartTime).toFixed(2)} ms`);
