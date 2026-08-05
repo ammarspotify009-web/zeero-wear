@@ -81,50 +81,65 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
       // If already mounted for this exact payment method, skip
       if (xpayInitRef.current === form.paymentMethod) return;
 
-      // v5 SDK exposes window.XPay (capital P)
-      if (window.XPay) {
-        try {
-          const pubKey = import.meta.env.VITE_XPAY_PUBLIC_KEY;
-          const accountId = import.meta.env.VITE_XPAY_ACCOUNT_ID;
-          
-          if (!pubKey || !accountId) {
-            console.warn("[XPay v5] Keys missing in environment");
-            return;
-          }
+      // v5 SDK exposes window.XPay (capital P) — check all possible names
+      const sdkCandidates = ['XPay', 'Xpay', 'xpay', 'XStak', 'XPayElement'];
+      const sdkKey = sdkCandidates.find(k => typeof (window as any)[k] === 'function');
+      const XPaySDK = sdkKey ? (window as any)[sdkKey] : null;
 
-          const elementOptions = {};
-
-          if (form.paymentMethod === 'card') {
-            console.log("[XPay v5] Mounting card element");
-            const xpayCard = new window.XPay({ publishableKey: pubKey, accountId });
-            const cardEl = document.getElementById('card-element');
-            if (cardEl) cardEl.innerHTML = '';
-            xpayCard.element('#card-element', elementOptions);
-            xpayInitRef.current = 'card';
-            setXpayInstances(prev => ({ card: xpayCard, jazzcash: prev?.jazzcash ?? null }));
-            setIsPaymentElementComplete(true);
-            console.log("[XPay v5] Card element mounted successfully");
-
-          } else if (form.paymentMethod === 'jazzcash') {
-            console.log("[XPay v5] Mounting jazzcash element");
-            const xpayJazzcash = new window.XPay({ publishableKey: pubKey, accountId });
-            const jazzEl = document.getElementById('jazzcash-element');
-            if (jazzEl) jazzEl.innerHTML = '';
-            xpayJazzcash.element('#jazzcash-element', elementOptions);
-            xpayInitRef.current = 'jazzcash';
-            setXpayInstances(prev => ({ card: prev?.card ?? null, jazzcash: xpayJazzcash }));
-            setIsPaymentElementComplete(true);
-            console.log("[XPay v5] JazzCash element mounted successfully");
-          }
-
-        } catch (err) {
-          console.error("[XPay v5] Element init error:", err);
-          xpayInitRef.current = '';
-          setIsPaymentElementComplete(false);
-        }
-      } else {
-        console.log("[XPay v5] SDK not yet loaded, retrying in 500ms...");
+      if (!XPaySDK && !window.XPay) {
+        // Log available payment-related globals so we can identify the correct name
+        const paymentGlobals = Object.keys(window).filter(k => 
+          k.toLowerCase().includes('xpay') || 
+          k.toLowerCase().includes('xstak') || 
+          k.toLowerCase().includes('stripe') ||
+          k.toLowerCase().includes('pay')
+        );
+        console.log("[XPay v5] SDK not yet loaded. Available payment globals:", paymentGlobals);
         timeoutId = setTimeout(initXpay, 500);
+        return;
+      }
+
+      const SDKConstructor = XPaySDK || window.XPay;
+      console.log("[XPay v5] SDK found as:", sdkKey || 'window.XPay', SDKConstructor);
+
+      try {
+        const pubKey = import.meta.env.VITE_XPAY_PUBLIC_KEY;
+        const accountId = import.meta.env.VITE_XPAY_ACCOUNT_ID;
+
+        if (!pubKey || !accountId) {
+          console.warn("[XPay v5] Keys missing in environment");
+          return;
+        }
+
+        const elementOptions = {};
+
+        if (form.paymentMethod === 'card') {
+          console.log("[XPay v5] Mounting card element");
+          const xpayCard = new SDKConstructor({ publishableKey: pubKey, accountId });
+          const cardEl = document.getElementById('card-element');
+          if (cardEl) cardEl.innerHTML = '';
+          xpayCard.element('#card-element', elementOptions);
+          xpayInitRef.current = 'card';
+          setXpayInstances(prev => ({ card: xpayCard, jazzcash: prev?.jazzcash ?? null }));
+          setIsPaymentElementComplete(true);
+          console.log("[XPay v5] Card element mounted successfully");
+
+        } else if (form.paymentMethod === 'jazzcash') {
+          console.log("[XPay v5] Mounting jazzcash element");
+          const xpayJazzcash = new SDKConstructor({ publishableKey: pubKey, accountId });
+          const jazzEl = document.getElementById('jazzcash-element');
+          if (jazzEl) jazzEl.innerHTML = '';
+          xpayJazzcash.element('#jazzcash-element', elementOptions);
+          xpayInitRef.current = 'jazzcash';
+          setXpayInstances(prev => ({ card: prev?.card ?? null, jazzcash: xpayJazzcash }));
+          setIsPaymentElementComplete(true);
+          console.log("[XPay v5] JazzCash element mounted successfully");
+        }
+
+      } catch (err) {
+        console.error("[XPay v5] Element init error:", err);
+        xpayInitRef.current = '';
+        setIsPaymentElementComplete(false);
       }
     };
 
