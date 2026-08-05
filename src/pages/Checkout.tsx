@@ -377,7 +377,11 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
         while (attempt < maxAttempts) {
           attempt++;
           try {
-            // NOTE: We intentionally omit TxnRefNo here as per the v5 migration test
+            // TxnRefNo is required by XPay API even in v5 (docs omit it but API enforces it)
+            const txnDate = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            const txnRand = Math.floor(1000 + Math.random() * 9000);
+            const txnRefNo = `TXN${txnDate}${txnRand}`;
+
             const confirmOptions = {
               paymentMethodType: form.paymentMethod,
               clientSecret: intentData.clientSecret,
@@ -386,6 +390,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                 email: form.email || "customer@zeerowear.com",
                 phone: form.phone
               },
+              TxnRefNo: txnRefNo,
               encryptionKey: intentData.encryptionKey
             };
             console.log(`[Attempt ${attempt}/${maxAttempts}] 🚀 PAYLOAD to confirmPayment:`, JSON.stringify(confirmOptions, null, 2));
