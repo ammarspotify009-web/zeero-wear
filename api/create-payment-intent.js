@@ -18,7 +18,6 @@ export default async function handler(req, res) {
     currency: currency,
     payment_method_types: payment_method_types,
     customer: customer,
-    txnRefNo: orderRef || `TXN-${Date.now()}`,
     shipping: {
       address1: "N/A",
       city: "N/A",

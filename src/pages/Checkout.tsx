@@ -398,7 +398,8 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
               customer: {
                 name: form.fullName,
                 email: form.email || "customer@zeerowear.com",
-                phone: form.phone
+                phone: form.phone,
+                TxnRefNo: `TXN${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`
               },
               encryptionKey: intentData.encryptionKey
             };
