@@ -7,7 +7,7 @@ import { saveAbandonedCart, deleteAbandonedCart } from '../data/abandonedCarts';
 
 declare global {
   interface Window {
-    Xpay: any;
+    XPay: any;
   }
 }
 type CheckoutProps = {
@@ -76,7 +76,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
         return;
       }
 
-      if (window.Xpay) {
+      // v5 SDK exposes window.XPay (capital P)
+      if (window.XPay) {
         if (xpayInitRef.current) return;
         
         try {
@@ -89,44 +90,42 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           }
 
           xpayInitRef.current = true;
+          console.log("[XPay v5] Initializing SDK with publishableKey and accountId");
           
-          const xpayCard = new window.Xpay({
+          const xpayCard = new window.XPay({
             publishableKey: pubKey,
             accountId: accountId
           });
 
-          const options = {
-            override: true,
-            style: {
-              ".input": {},
-              ".invalid": {},
-              ".label": {},
-            },
-          };
+          const elementOptions = {};
           
           const cardEl = document.getElementById('card-element');
           if (cardEl) cardEl.innerHTML = '';
 
-          xpayCard.element('#card-element', { ...options, paymentMethods: ['card'] });
+          console.log("[XPay v5] Mounting card element");
+          xpayCard.element('#card-element', elementOptions);
 
           // Only mount jazzcash element if it exists in DOM (i.e. SHOW_JAZZCASH is true)
           let xpayJazzcash: any = null;
           const jazzEl = document.getElementById('jazzcash-element');
           if (jazzEl) {
-            xpayJazzcash = new window.Xpay({
+            xpayJazzcash = new window.XPay({
               publishableKey: pubKey,
               accountId: accountId
             });
             jazzEl.innerHTML = '';
-            xpayJazzcash.element('#jazzcash-element', { ...options, paymentMethods: ['jazzcash'] });
+            console.log("[XPay v5] Mounting jazzcash element");
+            xpayJazzcash.element('#jazzcash-element', elementOptions);
           }
 
           setXpayInstances({ card: xpayCard, jazzcash: xpayJazzcash });
+          console.log("[XPay v5] SDK initialized successfully");
         } catch (err) {
-          console.error("XPay Element init error:", err);
+          console.error("[XPay v5] Element init error:", err);
           xpayInitRef.current = false;
         }
       } else {
+        console.log("[XPay v5] SDK not yet loaded, retrying in 500ms...");
         timeoutId = setTimeout(initXpay, 500);
       }
     };
