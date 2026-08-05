@@ -64,68 +64,63 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   });
 
   const [xpayInstances, setXpayInstances] = useState<{card: any, jazzcash: any} | null>(null);
-  const xpayInitRef = React.useRef(false);
+  const xpayInitRef = React.useRef<string>(''); // tracks which method is currently mounted
 
   React.useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
     const initXpay = () => {
-      // Skip XPay init for payment methods that don't use the SDK
+      // Skip XPay init for non-SDK payment methods
       if (form.paymentMethod === 'cod' || form.paymentMethod === 'easypaisa') {
-        xpayInitRef.current = false;
+        xpayInitRef.current = '';
         setXpayInstances(null);
+        setIsPaymentElementComplete(false);
         return;
       }
 
+      // If already mounted for this exact payment method, skip
+      if (xpayInitRef.current === form.paymentMethod) return;
+
       // v5 SDK exposes window.XPay (capital P)
       if (window.XPay) {
-        if (xpayInitRef.current) return;
-        
         try {
           const pubKey = import.meta.env.VITE_XPAY_PUBLIC_KEY;
           const accountId = import.meta.env.VITE_XPAY_ACCOUNT_ID;
           
           if (!pubKey || !accountId) {
-            console.warn("XPay keys missing in environment");
+            console.warn("[XPay v5] Keys missing in environment");
             return;
           }
 
-          xpayInitRef.current = true;
-          console.log("[XPay v5] Initializing SDK with publishableKey and accountId");
-          
-          const xpayCard = new window.XPay({
-            publishableKey: pubKey,
-            accountId: accountId
-          });
-
           const elementOptions = {};
-          
-          const cardEl = document.getElementById('card-element');
-          if (cardEl) cardEl.innerHTML = '';
 
-          console.log("[XPay v5] Mounting card element");
-          xpayCard.element('#card-element', elementOptions);
+          if (form.paymentMethod === 'card') {
+            console.log("[XPay v5] Mounting card element");
+            const xpayCard = new window.XPay({ publishableKey: pubKey, accountId });
+            const cardEl = document.getElementById('card-element');
+            if (cardEl) cardEl.innerHTML = '';
+            xpayCard.element('#card-element', elementOptions);
+            xpayInitRef.current = 'card';
+            setXpayInstances(prev => ({ card: xpayCard, jazzcash: prev?.jazzcash ?? null }));
+            setIsPaymentElementComplete(true);
+            console.log("[XPay v5] Card element mounted successfully");
 
-          // Only mount jazzcash element if it exists in DOM (i.e. SHOW_JAZZCASH is true)
-          let xpayJazzcash: any = null;
-          const jazzEl = document.getElementById('jazzcash-element');
-          if (jazzEl) {
-            xpayJazzcash = new window.XPay({
-              publishableKey: pubKey,
-              accountId: accountId
-            });
-            jazzEl.innerHTML = '';
+          } else if (form.paymentMethod === 'jazzcash') {
             console.log("[XPay v5] Mounting jazzcash element");
+            const xpayJazzcash = new window.XPay({ publishableKey: pubKey, accountId });
+            const jazzEl = document.getElementById('jazzcash-element');
+            if (jazzEl) jazzEl.innerHTML = '';
             xpayJazzcash.element('#jazzcash-element', elementOptions);
+            xpayInitRef.current = 'jazzcash';
+            setXpayInstances(prev => ({ card: prev?.card ?? null, jazzcash: xpayJazzcash }));
+            setIsPaymentElementComplete(true);
+            console.log("[XPay v5] JazzCash element mounted successfully");
           }
 
-          setXpayInstances({ card: xpayCard, jazzcash: xpayJazzcash });
-          // Mark element as mounted — SDK handles its own internal field validation
-          setIsPaymentElementComplete(true);
-          console.log("[XPay v5] SDK initialized successfully");
         } catch (err) {
           console.error("[XPay v5] Element init error:", err);
-          xpayInitRef.current = false;
+          xpayInitRef.current = '';
+          setIsPaymentElementComplete(false);
         }
       } else {
         console.log("[XPay v5] SDK not yet loaded, retrying in 500ms...");
@@ -259,13 +254,10 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     setForm(prev => ({ ...prev, [name]: value }));
     setError('');
     if (name === 'paymentMethod') {
-      // Reset to false only for non-SDK methods; for card/jazzcash, the element
-      // is already mounted (both are initialized together), so keep it enabled.
+      // For non-SDK methods, clear element state.
+      // For card/jazzcash, the useEffect will re-mount lazily.
       if (value === 'cod' || value === 'easypaisa') {
         setIsPaymentElementComplete(false);
-      } else if (value === 'card' || value === 'jazzcash') {
-        // Element is already mounted if xpayInitRef is true; keep button enabled
-        setIsPaymentElementComplete(xpayInitRef.current);
       }
     }
   };
