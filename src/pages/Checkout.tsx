@@ -393,13 +393,20 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           attempt++;
           try {
             const confirmOptions = {
-              paymentMethodType: form.paymentMethod,
+              paymentMethodType: form.paymentMethod === 'jazzcash' ? 'jazzcash-wallet' : form.paymentMethod,
               clientSecret: intentData.clientSecret,
               customer: {
                 name: form.fullName,
                 email: form.email || "customer@zeerowear.com",
                 phone: form.phone,
-                TxnRefNo: `TXN${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`
+                TxnRefNo: `TXN${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`,
+                txnRefNo: `TXN${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`,
+                wallet: {
+                  TxnRefNo: `TXN${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`
+                },
+                jazzcash: {
+                  TxnRefNo: `TXN${new Date().toISOString().slice(0, 10).replace(/-/g, '')}${Math.floor(1000 + Math.random() * 9000)}`
+                }
               },
               encryptionKey: intentData.encryptionKey
             };
