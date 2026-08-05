@@ -109,8 +109,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
 
         if (form.paymentMethod === 'card') {
           console.log("[XPay] Mounting card element (positional args)");
-          // Xpay constructor: (publishableKey, hmacSecret, accountId)
-          const xpayCard = new XPaySDK(pubKey, hmacSecret, accountId);
+          // Xpay constructor: (publishableKey, accountId, hmacSecret)
+          const xpayCard = new XPaySDK(pubKey, accountId, hmacSecret);
           const cardEl = document.getElementById('card-element');
           if (cardEl) cardEl.innerHTML = '';
           xpayCard.element('#card-element', elementOptions);
@@ -121,7 +121,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
 
         } else if (form.paymentMethod === 'jazzcash') {
           console.log("[XPay] Mounting jazzcash element (positional args)");
-          const xpayJazzcash = new XPaySDK(pubKey, hmacSecret, accountId);
+          const xpayJazzcash = new XPaySDK(pubKey, accountId, hmacSecret);
           const jazzEl = document.getElementById('jazzcash-element');
           if (jazzEl) jazzEl.innerHTML = '';
           xpayJazzcash.element('#jazzcash-element', elementOptions);
