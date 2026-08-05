@@ -393,7 +393,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
           attempt++;
           try {
             const confirmOptions = {
-              paymentMethodType: form.paymentMethod === 'jazzcash' ? 'jazzcash-wallet' : form.paymentMethod,
+              paymentMethodType: form.paymentMethod,
               clientSecret: intentData.clientSecret,
               customer: {
                 name: form.fullName,
