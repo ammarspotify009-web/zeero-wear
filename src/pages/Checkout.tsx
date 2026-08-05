@@ -407,8 +407,14 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
             const reqStartTime = performance.now();
             console.log(`[Attempt ${attempt}] Request started at: ${new Date().toISOString()}`);
 
-            confirmResult = await activeXpay.confirmPayment(confirmOptions);
-            
+            // XPay v5 confirmPayment takes positional arguments, NOT an object
+            confirmResult = await activeXpay.confirmPayment(
+              confirmOptions.paymentMethodType,
+              confirmOptions.clientSecret,
+              confirmOptions.customer,
+              confirmOptions.encryptionKey
+            );
+
             const reqEndTime = performance.now();
             console.log(`[Attempt ${attempt}] Request completed in ${(reqEndTime - reqStartTime).toFixed(2)} ms`);
             console.log(`[Attempt ${attempt}] confirmPayment result:`, confirmResult);
