@@ -81,8 +81,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
       // If already mounted for this exact payment method, skip
       if (xpayInitRef.current === form.paymentMethod) return;
 
-      // v5 CDN SDK is exposed as window.Xpay (positional args: publishableKey, accountId, hmacSecret)
-      // ⚠️  This order (pubKey, accountId, hmacSecret) is confirmed working on live/Vercel — do NOT swap.
+      // v5 CDN SDK is exposed as window.Xpay (positional args: publishableKey, hmacSecret, accountId)
       const XPaySDK: any = (window as any).Xpay || (window as any).XPay;
 
       if (!XPaySDK) {
@@ -106,47 +105,11 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           return;
         }
 
-        const elementOptions: any = {
-          paymentMethodType: form.paymentMethod,
-          paymentMethodTypes: [form.paymentMethod],
-          paymentMethod: form.paymentMethod,
-        };
-
-        // Helper: hide XPay's internal tab-switcher inside a container
-        const hideXpayTabs = (container: HTMLElement) => {
-          // XPay renders tabs with various class name patterns – hide all of them
-          const tabSelectors = [
-            '[class*="tab"]', '[class*="Tab"]',
-            '[class*="method"]', '[class*="Method"]',
-            '[class*="switch"]', '[class*="Switch"]',
-            '[class*="nav"]', '[class*="Nav"]',
-            '[id*="tab"]', '[id*="Tab"]',
-          ];
-          tabSelectors.forEach(sel => {
-            container.querySelectorAll<HTMLElement>(sel).forEach(el => {
-              // Only hide if it looks like a switcher (has multiple child items)
-              if (el.children.length >= 2) {
-                el.style.setProperty('display', 'none', 'important');
-              }
-            });
-          });
-        };
-
-        // Watch container with MutationObserver so we catch async-injected tabs
-        const watchAndHideTabs = (containerId: string) => {
-          const container = document.getElementById(containerId);
-          if (!container) return;
-          const tabObserver = new MutationObserver(() => hideXpayTabs(container));
-          tabObserver.observe(container, { childList: true, subtree: true });
-          // Run once immediately in case XPay already rendered
-          hideXpayTabs(container);
-          // Disconnect after 5 s (tabs are rendered within 2 s at most)
-          setTimeout(() => tabObserver.disconnect(), 5000);
-        };
+        const elementOptions = {};
 
         if (form.paymentMethod === 'card') {
           console.log("[XPay] Mounting card element (positional args)");
-          // XPay v5 constructor: (publishableKey, accountId, hmacSecret) — confirmed working on live
+          // Xpay constructor: (publishableKey, accountId, hmacSecret)
           const xpayCard = new XPaySDK(pubKey, accountId, hmacSecret);
           const cardEl = document.getElementById('card-element');
           if (cardEl) cardEl.innerHTML = '';
@@ -155,11 +118,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           setXpayInstances(prev => ({ card: xpayCard, jazzcash: prev?.jazzcash ?? null }));
           setIsPaymentElementComplete(true);
           console.log("[XPay] Card element mounted successfully");
-          watchAndHideTabs('card-element');
 
         } else if (form.paymentMethod === 'jazzcash') {
           console.log("[XPay] Mounting jazzcash element (positional args)");
-          // XPay v5 constructor: (publishableKey, accountId, hmacSecret) — confirmed working on live
           const xpayJazzcash = new XPaySDK(pubKey, accountId, hmacSecret);
           const jazzEl = document.getElementById('jazzcash-element');
           if (jazzEl) jazzEl.innerHTML = '';
@@ -168,7 +129,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           setXpayInstances(prev => ({ card: prev?.card ?? null, jazzcash: xpayJazzcash }));
           setIsPaymentElementComplete(true);
           console.log("[XPay] JazzCash element mounted successfully");
-          watchAndHideTabs('jazzcash-element');
         }
 
       } catch (err) {
@@ -177,9 +137,6 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
         setIsPaymentElementComplete(false);
       }
     };
-
-    // Always reset so switching method always forces a fresh remount
-    xpayInitRef.current = '';
 
     if (step === 'form') {
       initXpay();
@@ -593,18 +550,17 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
       await deleteAbandonedCart(cartSessionId);
       
       if (typeof (window as any).fbq === 'function') {
-        const pixelValue = Number(total) || 0;
         (window as any).fbq('track', 'Purchase', {
-          value: pixelValue,
+          value: total,
           currency: 'PKR',
           content_type: 'product',
           content_ids: cartItems.map(item => String(item.id)),
           contents: cartItems.map(item => ({
             id: String(item.id),
-            quantity: Number(item.quantity) || 1,
-            item_price: Number(item.price) || 0,
+            quantity: item.quantity,
+            item_price: item.price,
           })),
-          num_items: cartItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0)
+          num_items: cartItems.reduce((acc, item) => acc + item.quantity, 0)
         });
       }
 
