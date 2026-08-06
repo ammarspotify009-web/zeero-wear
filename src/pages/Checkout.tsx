@@ -85,6 +85,17 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
       const XPaySDK: any = (window as any).Xpay || (window as any).XPay;
 
       if (!XPaySDK) {
+        // Fallback: Dynamically inject script if not found (fixes localhost Vite env replacement issue)
+        const scriptId = 'xpay-sdk-script';
+        if (!document.getElementById(scriptId) && !document.querySelector('script[src*="xstak"]')) {
+          const script = document.createElement('script');
+          script.id = scriptId;
+          script.src = import.meta.env.VITE_XPAY_SDK_URL || 'https://js.xstak.com/v5/xpay-stage.js';
+          script.defer = true;
+          document.head.appendChild(script);
+          console.log("[XPay] Dynamically injected SDK script:", script.src);
+        }
+
         const paymentGlobals = Object.keys(window).filter(k =>
           k.toLowerCase().includes('xpay') || k.toLowerCase().includes('xstak')
         );
@@ -100,6 +111,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
         const accountId = import.meta.env.VITE_XPAY_ACCOUNT_ID;
         const hmacSecret = import.meta.env.VITE_XPAY_HMAC_SECRET;
 
+        console.log("XPay Init Debug -> PubKey:", pubKey, "AccountID:", accountId);
+
         if (!pubKey || !accountId) {
           console.warn("[XPay] Keys missing in environment");
           return;
@@ -107,10 +120,43 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
 
         const elementOptions = {};
 
+        // Helper: hide XPay's internal tab-switcher inside a container
+        const hideXpayTabs = (container: HTMLElement) => {
+          // XPay renders tabs with various class name patterns – hide all of them
+          const tabSelectors = [
+            '[class*="tab"]', '[class*="Tab"]',
+            '[class*="method"]', '[class*="Method"]',
+            '[class*="switch"]', '[class*="Switch"]',
+            '[class*="nav"]', '[class*="Nav"]',
+            '[id*="tab"]', '[id*="Tab"]',
+          ];
+          tabSelectors.forEach(sel => {
+            container.querySelectorAll<HTMLElement>(sel).forEach(el => {
+              // Only hide if it looks like a switcher (has multiple child items)
+              if (el.children.length >= 2) {
+                el.style.setProperty('display', 'none', 'important');
+              }
+            });
+          });
+        };
+
+        // Watch container with MutationObserver so we catch async-injected tabs
+        const watchAndHideTabs = (containerId: string) => {
+          const container = document.getElementById(containerId);
+          if (!container) return;
+          const tabObserver = new MutationObserver(() => hideXpayTabs(container));
+          tabObserver.observe(container, { childList: true, subtree: true });
+          hideXpayTabs(container);
+          setTimeout(() => tabObserver.disconnect(), 5000);
+        };
+
         if (form.paymentMethod === 'card') {
-          console.log("[XPay] Mounting card element (positional args)");
-          // Xpay constructor: (publishableKey, accountId, hmacSecret)
-          const xpayCard = new XPaySDK(pubKey, accountId, hmacSecret);
+          console.log("[XPay] Mounting card element");
+          const xpayCard = new XPaySDK({
+            publishableKey: pubKey,
+            accountId: accountId,
+            hmacSecret: hmacSecret
+          });
           const cardEl = document.getElementById('card-element');
           if (cardEl) cardEl.innerHTML = '';
           xpayCard.element('#card-element', elementOptions);
@@ -118,17 +164,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           setXpayInstances(prev => ({ card: xpayCard, jazzcash: prev?.jazzcash ?? null }));
           setIsPaymentElementComplete(true);
           console.log("[XPay] Card element mounted successfully");
-
-        } else if (form.paymentMethod === 'jazzcash') {
-          console.log("[XPay] Mounting jazzcash element (positional args)");
-          const xpayJazzcash = new XPaySDK(pubKey, accountId, hmacSecret);
-          const jazzEl = document.getElementById('jazzcash-element');
-          if (jazzEl) jazzEl.innerHTML = '';
-          xpayJazzcash.element('#jazzcash-element', elementOptions);
-          xpayInitRef.current = 'jazzcash';
-          setXpayInstances(prev => ({ card: prev?.card ?? null, jazzcash: xpayJazzcash }));
-          setIsPaymentElementComplete(true);
-          console.log("[XPay] JazzCash element mounted successfully");
+          watchAndHideTabs('card-element');
         }
 
       } catch (err) {
@@ -137,6 +173,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
         setIsPaymentElementComplete(false);
       }
     };
+
+    // Always reset so switching method always forces a fresh remount
+    xpayInitRef.current = '';
 
     if (step === 'form') {
       initXpay();
@@ -415,13 +454,13 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
             const reqStartTime = performance.now();
             console.log(`[Attempt ${attempt}] Request started at: ${new Date().toISOString()}`);
 
-            // XPay v5 confirmPayment takes positional arguments, NOT an object
-            confirmResult = await activeXpay.confirmPayment(
-              confirmOptions.paymentMethodType,
-              confirmOptions.clientSecret,
-              confirmOptions.customer,
-              confirmOptions.encryptionKey
-            );
+            // XPay v5 confirmPayment actually expects an object!
+            confirmResult = await activeXpay.confirmPayment({
+              paymentMethodType: confirmOptions.paymentMethodType,
+              clientSecret: confirmOptions.clientSecret,
+              customer: confirmOptions.customer,
+              encryptionKey: confirmOptions.encryptionKey
+            });
 
             const reqEndTime = performance.now();
             console.log(`[Attempt ${attempt}] Request completed in ${(reqEndTime - reqStartTime).toFixed(2)} ms`);
@@ -663,26 +702,11 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                   <input type="radio" name="paymentMethod" value="card" checked={form.paymentMethod === 'card'} onChange={handleChange} />
                   <i className="fas fa-credit-card" />
                   <div>
-                    <strong>Credit / Debit Card</strong>
-                    <p>Pay securely via XPay</p>
+                    <strong>Pay Online</strong>
+                    <p>Debit / Credit Card & JazzCash</p>
                   </div>
                 </label>
                 <div id="card-element" style={{ display: form.paymentMethod === 'card' ? 'block' : 'none', marginTop: '10px' }}></div>
-
-                {SHOW_JAZZCASH && (
-                  <>
-                    <label className={`payment-option ${form.paymentMethod === 'jazzcash' ? 'selected' : ''}`}>
-                      <input type="radio" name="paymentMethod" value="jazzcash" checked={form.paymentMethod === 'jazzcash'} onChange={handleChange} />
-                      <i className="fas fa-mobile-alt" />
-                      <div>
-                        <strong>JazzCash</strong>
-                        <p>Pay via JazzCash Wallet</p>
-                      </div>
-                    </label>
-                    <div id="jazzcash-element" style={{ display: form.paymentMethod === 'jazzcash' ? 'block' : 'none', marginTop: '10px' }}></div>
-                  </>
-                )}
-
                 {SHOW_EASYPAISA && (
                   <>
                     <label className={`payment-option ${form.paymentMethod === 'easypaisa' ? 'selected' : ''}`}>
