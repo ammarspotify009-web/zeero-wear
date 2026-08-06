@@ -2065,7 +2065,36 @@ footer {
   margin: 2px 0 0;
 }
 
-/* Error */
+/* ── XPay internal tab-switcher: FORCE HIDDEN ──────────────────────────
+   XPay SDK injects its own payment-method tabs. Since we have our own
+   radio buttons above, hide any internal tab rows the SDK renders.
+   Targets the most common class/attribute patterns XPay uses.          */
+#card-element [class*="tab"]:has(> *:nth-child(2)),
+#card-element [class*="Tab"]:has(> *:nth-child(2)),
+#card-element [class*="method-selector"],
+#card-element [class*="methodSelector"],
+#card-element [class*="payment-methods"],
+#card-element [class*="paymentMethods"],
+#card-element [class*="method-tabs"],
+#card-element [class*="methodTabs"],
+#card-element [class*="pay-nav"],
+#card-element [class*="payNav"],
+#card-element [id*="tab"],
+#jazzcash-element [class*="tab"]:has(> *:nth-child(2)),
+#jazzcash-element [class*="Tab"]:has(> *:nth-child(2)),
+#jazzcash-element [class*="method-selector"],
+#jazzcash-element [class*="methodSelector"],
+#jazzcash-element [class*="payment-methods"],
+#jazzcash-element [class*="paymentMethods"],
+#jazzcash-element [class*="method-tabs"],
+#jazzcash-element [class*="methodTabs"],
+#jazzcash-element [class*="pay-nav"],
+#jazzcash-element [class*="payNav"],
+#jazzcash-element [id*="tab"] {
+  display: none !important;
+}
+
+
 .checkout-error {
   background: #fff0ee;
   border: 1.5px solid #f8b4a8;

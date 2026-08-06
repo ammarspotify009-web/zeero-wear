@@ -111,6 +111,38 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           paymentMethod: form.paymentMethod,
         };
 
+        // Helper: hide XPay's internal tab-switcher inside a container
+        const hideXpayTabs = (container: HTMLElement) => {
+          // XPay renders tabs with various class name patterns – hide all of them
+          const tabSelectors = [
+            '[class*="tab"]', '[class*="Tab"]',
+            '[class*="method"]', '[class*="Method"]',
+            '[class*="switch"]', '[class*="Switch"]',
+            '[class*="nav"]', '[class*="Nav"]',
+            '[id*="tab"]', '[id*="Tab"]',
+          ];
+          tabSelectors.forEach(sel => {
+            container.querySelectorAll<HTMLElement>(sel).forEach(el => {
+              // Only hide if it looks like a switcher (has multiple child items)
+              if (el.children.length >= 2) {
+                el.style.setProperty('display', 'none', 'important');
+              }
+            });
+          });
+        };
+
+        // Watch container with MutationObserver so we catch async-injected tabs
+        const watchAndHideTabs = (containerId: string) => {
+          const container = document.getElementById(containerId);
+          if (!container) return;
+          const tabObserver = new MutationObserver(() => hideXpayTabs(container));
+          tabObserver.observe(container, { childList: true, subtree: true });
+          // Run once immediately in case XPay already rendered
+          hideXpayTabs(container);
+          // Disconnect after 5 s (tabs are rendered within 2 s at most)
+          setTimeout(() => tabObserver.disconnect(), 5000);
+        };
+
         if (form.paymentMethod === 'card') {
           console.log("[XPay] Mounting card element (positional args)");
           // Xpay constructor: (publishableKey, accountId, hmacSecret)
@@ -122,6 +154,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           setXpayInstances(prev => ({ card: xpayCard, jazzcash: prev?.jazzcash ?? null }));
           setIsPaymentElementComplete(true);
           console.log("[XPay] Card element mounted successfully");
+          watchAndHideTabs('card-element');
 
         } else if (form.paymentMethod === 'jazzcash') {
           console.log("[XPay] Mounting jazzcash element (positional args)");
@@ -133,6 +166,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           setXpayInstances(prev => ({ card: prev?.card ?? null, jazzcash: xpayJazzcash }));
           setIsPaymentElementComplete(true);
           console.log("[XPay] JazzCash element mounted successfully");
+          watchAndHideTabs('jazzcash-element');
         }
 
       } catch (err) {
@@ -141,6 +175,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
         setIsPaymentElementComplete(false);
       }
     };
+
+    // Always reset so switching method always forces a fresh remount
+    xpayInitRef.current = '';
 
     if (step === 'form') {
       initXpay();
