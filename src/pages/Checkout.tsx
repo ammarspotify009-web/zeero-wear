@@ -105,7 +105,11 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
           return;
         }
 
-        const elementOptions = {};
+        const elementOptions: any = {
+          paymentMethodType: form.paymentMethod,
+          paymentMethodTypes: [form.paymentMethod],
+          paymentMethod: form.paymentMethod,
+        };
 
         if (form.paymentMethod === 'card') {
           console.log("[XPay] Mounting card element (positional args)");
@@ -550,17 +554,18 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
       await deleteAbandonedCart(cartSessionId);
       
       if (typeof (window as any).fbq === 'function') {
+        const pixelValue = Number(total) || 0;
         (window as any).fbq('track', 'Purchase', {
-          value: total,
+          value: pixelValue,
           currency: 'PKR',
           content_type: 'product',
           content_ids: cartItems.map(item => String(item.id)),
           contents: cartItems.map(item => ({
             id: String(item.id),
-            quantity: item.quantity,
-            item_price: item.price,
+            quantity: Number(item.quantity) || 1,
+            item_price: Number(item.price) || 0,
           })),
-          num_items: cartItems.reduce((acc, item) => acc + item.quantity, 0)
+          num_items: cartItems.reduce((acc, item) => acc + (Number(item.quantity) || 0), 0)
         });
       }
 
