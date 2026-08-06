@@ -31,8 +31,8 @@ type FormData = {
 
 
 
-const SHOW_JAZZCASH = true;
-const SHOW_EASYPAISA = false;
+const SHOW_EASYPAISA = false; // Toggle this when Easypaisa is ready
+
 const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const navigate = useNavigate();
   const [step, setStep] = useState<'form' | 'success'>('form');
