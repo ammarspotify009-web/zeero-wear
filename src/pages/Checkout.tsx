@@ -82,6 +82,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
       if (xpayInitRef.current === form.paymentMethod) return;
 
       // v5 CDN SDK is exposed as window.Xpay (positional args: publishableKey, hmacSecret, accountId)
+      // ⚠️  Order matters: pubKey → hmacSecret → accountId  (NOT pubKey → accountId → hmacSecret)
       const XPaySDK: any = (window as any).Xpay || (window as any).XPay;
 
       if (!XPaySDK) {
@@ -145,8 +146,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
 
         if (form.paymentMethod === 'card') {
           console.log("[XPay] Mounting card element (positional args)");
-          // Xpay constructor: (publishableKey, accountId, hmacSecret)
-          const xpayCard = new XPaySDK(pubKey, accountId, hmacSecret);
+          // XPay v5 constructor: (publishableKey, hmacSecret, accountId)
+          const xpayCard = new XPaySDK(pubKey, hmacSecret, accountId);
           const cardEl = document.getElementById('card-element');
           if (cardEl) cardEl.innerHTML = '';
           xpayCard.element('#card-element', elementOptions);
@@ -158,7 +159,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
 
         } else if (form.paymentMethod === 'jazzcash') {
           console.log("[XPay] Mounting jazzcash element (positional args)");
-          const xpayJazzcash = new XPaySDK(pubKey, accountId, hmacSecret);
+          // XPay v5 constructor: (publishableKey, hmacSecret, accountId)
+          const xpayJazzcash = new XPaySDK(pubKey, hmacSecret, accountId);
           const jazzEl = document.getElementById('jazzcash-element');
           if (jazzEl) jazzEl.innerHTML = '';
           xpayJazzcash.element('#jazzcash-element', elementOptions);
