@@ -15,7 +15,7 @@ type CheckoutProps = {
   clearCart: () => void;
 };
 
-const DELIVERY_FEE = 199;
+const DELIVERY_FEE: number = 0; // Was 199 (Set back to 199 to re-enable)
 const FREE_DELIVERY_THRESHOLD = 3000;
 
 type FormData = {
