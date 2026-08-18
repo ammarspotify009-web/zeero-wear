@@ -20,18 +20,6 @@ const ShopByAge = () => {
             </div>
             <div className="age-card-label">Girls</div>
           </Link>
-          <Link to="/category/women" className="age-card">
-            <div className="age-img-wrapper">
-              <img src="/image for shop by category women.jpeg" alt="Women (Suits)" />
-            </div>
-            <div className="age-card-label">Women (Suits)</div>
-          </Link>
-          <Link to="/category/footwear" className="age-card">
-            <div className="age-img-wrapper">
-              <img src="/shop by category shoes.jpeg" alt="Shoes" />
-            </div>
-            <div className="age-card-label">Shoes</div>
-          </Link>
         </div>
       </div>
     </section>

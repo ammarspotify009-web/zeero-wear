@@ -36,8 +36,8 @@ function AppContent() {
   });
   
   const [homeCategories, setHomeCategories] = useState<string[]>(() => {
-    const saved = localStorage.getItem('zeero_wear_home_categories');
-    return saved ? JSON.parse(saved) : ['boy', 'girl', 'women', 'footwear'];
+    const saved = localStorage.getItem('zeero_wear_home_categories_v2');
+    return saved ? JSON.parse(saved) : ['boy', 'girl'];
   });
   
   useEffect(() => {
@@ -49,7 +49,7 @@ function AppContent() {
   }, [wishlistItems]);
 
   useEffect(() => {
-    localStorage.setItem('zeero_wear_home_categories', JSON.stringify(homeCategories));
+    localStorage.setItem('zeero_wear_home_categories_v2', JSON.stringify(homeCategories));
   }, [homeCategories]);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [isAccountOpen, setIsAccountOpen] = useState(false);

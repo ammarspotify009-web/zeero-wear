@@ -11,7 +11,7 @@ type Props = {
   homeCategories?: string[];
 };
 
-const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist, wishlistItems = [], homeCategories = ['boy', 'girl', 'women', 'footwear'] }) => {
+const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist, wishlistItems = [], homeCategories = ['boy', 'girl'] }) => {
   const categories = homeCategories;
 
   const categoryLabels: Record<string, string> = {
