@@ -3,6 +3,7 @@ import Hero from '../components/Hero';
 import Categories from '../components/Categories';
 import ProductsSection from '../components/ProductsSection';
 import ShopByAge from '../components/ShopByAge';
+import BestSellersSection from '../components/BestSellersSection';
 import Footwear from '../components/Footwear';
 import Reviews from '../components/Reviews';
 import type { Product } from '../data/products';
@@ -24,6 +25,7 @@ const Home: React.FC<HomeProps> = ({ products, addToCart, toggleWishlist, wishli
       <Categories categories={categories} />
       <ProductsSection products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} homeCategories={homeCategories} />
       <ShopByAge />
+      <BestSellersSection products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} />
       <Footwear products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} />
       <Reviews />
     </>
