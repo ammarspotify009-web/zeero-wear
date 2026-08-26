@@ -3,27 +3,34 @@ import { Link } from 'react-router-dom';
 import type { CartItem } from '../types';
 import type { Product } from '../data/products';
 
+import type { Category } from '../data/categories';
+
 type Props = {
   products: Product[];
   addToCart?: (item: Omit<CartItem, 'quantity'>) => void;
   toggleWishlist?: (product: Product) => void;
   wishlistItems?: Product[];
   homeCategories?: string[];
+  categories?: Category[];
 };
 
-const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist, wishlistItems = [], homeCategories = ['boy', 'girl'] }) => {
+const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist, wishlistItems = [], homeCategories = ['boy', 'girl'], categories: categoriesList = [] }) => {
   const categories = homeCategories;
 
-  const categoryLabels: Record<string, string> = {
-    'baby-boy': 'Baby Boy',
-    'baby-girl': 'Baby Girl',
-    'boy': 'Boys',
-    'girl': 'Girls',
-    'women': 'Women (Suits)',
-    'footwear': 'Shoes',
-    'accessories': 'Accessories',
-    'hadid': 'Eastern Wear',
-    'new-born': 'Newborn'
+  const getCategoryLabel = (catId: string) => {
+    const found = categoriesList.find(c => c.id === catId);
+    if (found) return found.name;
+    const fallbackLabels: Record<string, string> = {
+      'baby-boy': 'Baby Boy',
+      'baby-girl': 'Baby Girl',
+      'boy': 'Boys',
+      'girl': 'Girls',
+      'footwear': 'Shoes',
+      'accessories': 'Accessories',
+      'hadid': 'Eastern Wear',
+      'new-born': 'Newborn'
+    };
+    return fallbackLabels[catId] || catId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
   };
 
   const [activeTab, setActiveTab] = useState(categories[0] || 'boy');
@@ -81,7 +88,7 @@ const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist,
               }}
               onClick={() => setActiveTab(cat)}
             >
-              {categoryLabels[cat] || cat}
+              {getCategoryLabel(cat)}
             </button>
           ))}
         </div>
@@ -98,7 +105,10 @@ const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist,
                 <div className="product-card" key={prod.id}>
                   <div className="product-img-wrap">
                     <Link to={`/product/${prod.id}`}>
-                      <img src={prod.images[0]} alt={prod.name} loading="lazy" />
+                      <img src={prod.images[0]} alt={prod.name} className="product-img main-img" loading="lazy" />
+                      {prod.images && prod.images.length > 0 && (
+                        <img src={prod.images[1] || prod.images[0]} alt={prod.name} className="product-img hover-img" loading="lazy" />
+                      )}
                     </Link>
                     {prod.badge === 'sale' || (prod.badge !== 'none' && hasDiscount && !prod.badge) ? (
                       <span className="product-badge sale">Sale</span>
@@ -162,7 +172,7 @@ const ProductsSection: React.FC<Props> = ({ products, addToCart, toggleWishlist,
 
         <div className="view-all-wrap">
           <Link to={`/category/${activeTab}`} className="btn-primary">
-            View All {categoryLabels[activeTab] || activeTab} <i className="fas fa-arrow-right"></i>
+            View All {getCategoryLabel(activeTab)} <i className="fas fa-arrow-right"></i>
           </Link>
         </div>
       </div>

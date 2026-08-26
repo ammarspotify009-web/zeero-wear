@@ -235,7 +235,10 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ products, addToCart }) => {
                   <div className="product-card" key={product.id} style={{ position: 'relative' }}>
                     <Link to={`/product/${product.id}`} style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}>
                       <div className="product-img-wrap">
-                        <img src={product.images[0]} alt={product.name} loading="lazy" />
+                        <img src={product.images[0]} alt={product.name} className="product-img main-img" loading="lazy" />
+                        {product.images && product.images.length > 0 && (
+                          <img src={product.images[1] || product.images[0]} alt={product.name} className="product-img hover-img" loading="lazy" />
+                        )}
                         {product.badge === 'sale' || (product.badge !== 'none' && product.oldPrice && !product.badge) ? (
                           <span className="product-badge sale">Sale</span>
                         ) : product.badge === 'best-seller' ? (

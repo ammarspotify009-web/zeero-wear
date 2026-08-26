@@ -63,6 +63,7 @@ export const INITIAL_PRODUCTS: Product[] = [
     price: 1890,
     images: [
       'https://hipkids.pk/cdn/shop/files/29_f1f4d31f-0985-4ddc-83c9-32db12e49bc1.webp?v=1782287979&width=800',
+      'https://hipkids.pk/cdn/shop/files/5_17c586c1-307f-4d73-8031-efd53f7dd33c.webp?v=1775553258&width=800'
     ],
     description: 'Mid blue shorts with cute embroidered flowers. Soft elastic waistband offers comfortable snug fit. Pairs beautifully with any simple tee.',
     sizes: ['1Y', '2Y', '3Y'],
@@ -180,7 +181,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'Baby Soft Cotton Socks 3-Pack',
     price: 790,
     images: [
-      'https://hipkids.pk/cdn/shop/files/9_ab5e7552-094d-44a5-9273-df5b4b1c2b5f.jpg?v=1719572621&width=800'
+      'https://hipkids.pk/cdn/shop/files/9_ab5e7552-094d-44a5-9273-df5b4b1c2b5f.jpg?v=1719572621&width=800',
+      'https://hipkids.pk/cdn/shop/files/8_c37c229f-3d61-419b-a01f-df8497d3dc71.jpg?v=1719572621&width=800'
     ],
     description: 'Super soft socks bundle for newborns, designed with skid-resistant rubber grips at the bottom.',
     sizes: ['0-6M', '6-12M'],
@@ -218,7 +220,8 @@ export const INITIAL_PRODUCTS: Product[] = [
     name: 'Newborn Sleepsuit with Mittens',
     price: 1890,
     images: [
-      'https://hipkids.pk/cdn/shop/files/7_70d2f093-9c86-455b-91cc-c66af6241b21.jpg?v=1719572621&width=800'
+      'https://hipkids.pk/cdn/shop/files/7_70d2f093-9c86-455b-91cc-c66af6241b21.jpg?v=1719572621&width=800',
+      'https://hipkids.pk/cdn/shop/files/1_aa3150de-0067-4da9-bb13-74f6f55e891b.webp?v=1781798469&width=800'
     ],
     description: 'Cuddly newborn footie sleepsuit with fold-over scratch mittens. Crafted with double zippers.',
     sizes: ['NB', '0-3M'],

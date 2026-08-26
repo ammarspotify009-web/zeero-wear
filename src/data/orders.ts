@@ -16,7 +16,7 @@ export interface Order {
   totalAmount: number;
   items: CartItem[];
   notes: string;
-  status: 'Pending' | 'Approved' | 'Cancelled' | 'Payment Failed';
+  status: 'Pending' | 'Confirmed on Call' | 'Approved' | 'Cancelled' | 'Payment Failed';
   orderDate: string;
   createdAt?: string;
 }
@@ -63,10 +63,10 @@ export const addOrderToSupabase = async (order: Order): Promise<boolean> => {
   }
 };
 
-// ─── UPDATE ORDER STATUS (Approve / Cancel / Re-Approve) ───
+// ─── UPDATE ORDER STATUS (Approve / Cancel / Confirmed on Call / Re-Approve) ───
 export const updateOrderStatus = async (
   orderId: string,
-  status: 'Pending' | 'Approved' | 'Cancelled'
+  status: 'Pending' | 'Confirmed on Call' | 'Approved' | 'Cancelled'
 ): Promise<boolean> => {
   try {
     const { error } = await supabase
@@ -88,7 +88,7 @@ export const updateOrderStatus = async (
 // ─── BULK UPDATE ORDER STATUS ───
 export const bulkUpdateOrderStatus = async (
   orderIds: string[],
-  status: 'Pending' | 'Approved' | 'Cancelled'
+  status: 'Pending' | 'Confirmed on Call' | 'Approved' | 'Cancelled'
 ): Promise<boolean> => {
   if (!orderIds.length) return true;
   try {

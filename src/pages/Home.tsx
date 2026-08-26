@@ -23,7 +23,7 @@ const Home: React.FC<HomeProps> = ({ products, addToCart, toggleWishlist, wishli
     <>
       <Hero />
       <Categories categories={categories} />
-      <ProductsSection products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} homeCategories={homeCategories} />
+      <ProductsSection products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} homeCategories={homeCategories} categories={categories} />
       <ShopByAge />
       <BestSellersSection products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} />
       <Footwear products={products} addToCart={addToCart} toggleWishlist={toggleWishlist} wishlistItems={wishlistItems} />

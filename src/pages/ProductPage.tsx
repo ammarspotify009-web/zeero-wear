@@ -272,8 +272,13 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
           <div className="products-grid">
             {displayRelated.map(prod => (
               <Link key={prod.id} to={`/product/${prod.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                <div className="product-card" style={{ background: 'var(--white)', borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border)' }}>
-                  <img src={prod.images[0]} alt={prod.name} style={{ width: '100%', height: '260px', objectFit: 'cover' }} />
+                <div className="product-card">
+                  <div className="product-img-wrap">
+                    <img src={prod.images[0]} alt={prod.name} className="product-img main-img" loading="lazy" />
+                    {prod.images && prod.images.length > 0 && (
+                      <img src={prod.images[1] || prod.images[0]} alt={prod.name} className="product-img hover-img" loading="lazy" />
+                    )}
+                  </div>
                   <div style={{ padding: '16px' }}>
                     <div className="product-name" style={{ fontWeight: 600, fontSize: '13.5px', marginBottom: '8px', color: 'var(--dark)', minHeight: '38px' }}>{prod.name}</div>
                     <div style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '15px' }}>Rs. {prod.price.toLocaleString()}</div>

@@ -52,7 +52,10 @@ const BestSellersSection: React.FC<Props> = ({ products, addToCart, toggleWishli
               <div className="product-card" key={prod.id}>
                 <div className="product-img-wrap">
                   <Link to={`/product/${prod.id}`}>
-                    <img src={prod.images[0]} alt={prod.name} loading="lazy" />
+                    <img src={prod.images[0]} alt={prod.name} className="product-img main-img" loading="lazy" />
+                    {prod.images && prod.images.length > 0 && (
+                      <img src={prod.images[1] || prod.images[0]} alt={prod.name} className="product-img hover-img" loading="lazy" />
+                    )}
                   </Link>
                   {prod.badge === 'sale' || (prod.badge !== 'none' && hasDiscount && !prod.badge) ? (
                     <span className="product-badge sale">Sale</span>

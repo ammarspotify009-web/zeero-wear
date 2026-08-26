@@ -24,7 +24,7 @@ type AdminDashboardProps = {
 };
 
 type TabType = 'overview' | 'products' | 'add-product' | 'categories' | 'home-categories' | 'orders' | 'queries' | 'abandoned-carts';
-type OrderFilter = 'All' | 'Pending' | 'Approved' | 'Cancelled';
+type OrderFilter = 'All' | 'Pending' | 'Confirmed on Call' | 'Approved' | 'Cancelled';
 
 
 
@@ -498,6 +498,42 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
     setTimeout(() => setOrderActionMsg(null), 3500);
   };
 
+  const handleConfirmOnCallOrder = async (orderId: string) => {
+    const orderToUpdate = orders.find(o => o.id === orderId);
+    if (!orderToUpdate) return;
+
+    setOrderActionLoading(orderId);
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Confirmed on Call' as const } : o));
+
+    const ok = await updateOrderStatus(orderId, 'Confirmed on Call');
+    setOrderActionLoading(null);
+
+    if (ok) {
+      showOrderMsg('success', `Order ${orderId} marked as Confirmed on Call.`);
+    } else {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: orderToUpdate.status } : o));
+      showOrderMsg('error', `Failed to update status for order ${orderId}.`);
+    }
+  };
+
+  const handleSetPendingOrder = async (orderId: string) => {
+    const orderToUpdate = orders.find(o => o.id === orderId);
+    if (!orderToUpdate) return;
+
+    setOrderActionLoading(orderId);
+    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'Pending' as const } : o));
+
+    const ok = await updateOrderStatus(orderId, 'Pending');
+    setOrderActionLoading(null);
+
+    if (ok) {
+      showOrderMsg('success', `Order ${orderId} moved to Pending.`);
+    } else {
+      setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: orderToUpdate.status } : o));
+      showOrderMsg('error', `Failed to update status for order ${orderId}.`);
+    }
+  };
+
   const handleApproveOrder = async (orderId: string) => {
     const orderToApprove = orders.find(o => o.id === orderId);
     if (!orderToApprove) return;
@@ -616,7 +652,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Pending': return { bg: 'rgba(240, 168, 50, 0.15)', color: '#d4940a', text: '⏳ Pending' };
+      case 'Pending': return { bg: 'rgba(240, 168, 50, 0.15)', color: '#d4940a', text: '⏳ New / Pending' };
+      case 'Confirmed on Call': return { bg: 'rgba(37, 99, 235, 0.12)', color: '#2563eb', text: '📞 Confirmed on Call' };
       case 'Approved': return { bg: 'rgba(123, 171, 139, 0.2)', color: 'var(--success)', text: '✅ Approved' };
       case 'Cancelled': return { bg: 'rgba(255, 59, 48, 0.12)', color: '#ff3b30', text: '❌ Cancelled' };
       default: return { bg: '#e2e8f0', color: '#718096', text: status };
@@ -1602,7 +1639,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
         {/* TAB 4.5: HOME CATEGORIES */}
         {activeTab === 'home-categories' && (
-          <AdminHomeCategories homeCategories={homeCategories} setHomeCategories={setHomeCategories} />
+          <AdminHomeCategories 
+            homeCategories={homeCategories} 
+            setHomeCategories={setHomeCategories}
+            categories={categories}
+            onCategoriesChange={onCategoriesChange}
+          />
         )}
 
         {/* TAB 5: ORDERS MANAGEMENT */}
@@ -1660,14 +1702,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
 
             {/* STATUS FILTER BAR */}
             <div className="order-filter-bar" style={{ display: 'flex', gap: '10px', marginBottom: '28px', flexWrap: 'wrap' }}>
-              {(['All', 'Pending', 'Approved', 'Cancelled'] as OrderFilter[]).map(filter => {
+              {(['All', 'Pending', 'Confirmed on Call', 'Approved', 'Cancelled'] as OrderFilter[]).map(filter => {
                 const count = filter === 'All' ? orders.length : orders.filter(o => o.status === filter).length;
                 const isActive = orderFilter === filter;
                 const filterColors: Record<string, string> = {
                   'All': 'var(--primary)',
                   'Pending': '#d4940a',
+                  'Confirmed on Call': '#2563eb',
                   'Approved': 'var(--success)',
                   'Cancelled': '#ff3b30'
+                };
+                const filterLabels: Record<string, string> = {
+                  'All': 'All',
+                  'Pending': 'New / Pending',
+                  'Confirmed on Call': 'Confirmed on Call',
+                  'Approved': 'Approved',
+                  'Cancelled': 'Cancelled'
                 };
                 return (
                   <button
@@ -1691,9 +1741,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                   >
                     {filter === 'All' && <i className="fas fa-layer-group"></i>}
                     {filter === 'Pending' && <i className="fas fa-clock"></i>}
+                    {filter === 'Confirmed on Call' && <i className="fas fa-phone-alt"></i>}
                     {filter === 'Approved' && <i className="fas fa-check-circle"></i>}
                     {filter === 'Cancelled' && <i className="fas fa-times-circle"></i>}
-                    {filter} ({count})
+                    {filterLabels[filter]} ({count})
                   </button>
                 );
               })}
@@ -1892,60 +1943,59 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                       {/* Action Buttons */}
                       <div style={{
                         display: 'flex',
+                        flexWrap: 'wrap',
                         gap: '8px',
                         padding: '14px 20px',
                         borderTop: '1px solid var(--border)',
                         background: '#fafbfc'
                       }}>
-                        {order.status === 'Pending' && (
+                        {order.status !== 'Confirmed on Call' && (
+                          <button
+                            onClick={() => handleConfirmOnCallOrder(order.id)}
+                            disabled={orderActionLoading === order.id}
+                            style={{
+                              flex: 1, minWidth: '130px', padding: '9px 12px', borderRadius: '8px', border: '1px solid #bfdbfe',
+                              background: '#eff6ff', color: '#1d4ed8', fontWeight: 700, fontSize: '12.5px', cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <i className="fas fa-phone-alt"></i> Confirm on Call
+                          </button>
+                        )}
+                        {order.status !== 'Pending' && (
+                          <button
+                            onClick={() => handleSetPendingOrder(order.id)}
+                            disabled={orderActionLoading === order.id}
+                            style={{
+                              flex: 1, minWidth: '110px', padding: '9px 12px', borderRadius: '8px', border: '1px solid #fef08a',
+                              background: '#fefce8', color: '#a16207', fontWeight: 700, fontSize: '12.5px', cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <i className="fas fa-clock"></i> Keep Pending
+                          </button>
+                        )}
+                        {order.status !== 'Approved' && (
                           <button
                             onClick={() => handleApproveOrder(order.id)}
                             disabled={orderActionLoading === order.id}
-                            className="order-action-btn approve-btn"
                             style={{
-                              flex: 1,
-                              padding: '10px',
-                              borderRadius: '8px',
-                              border: 'none',
-                              background: 'var(--success)',
-                              color: '#fff',
-                              fontWeight: 700,
-                              fontSize: '13px',
-                              cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
-                              opacity: orderActionLoading === order.id ? 0.7 : 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
-                              transition: 'all 0.2s ease'
+                              flex: 1, minWidth: '100px', padding: '9px 12px', borderRadius: '8px', border: 'none',
+                              background: 'var(--success)', color: '#fff', fontWeight: 700, fontSize: '12.5px', cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
+                              opacity: orderActionLoading === order.id ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s ease'
                             }}
                           >
-                            {orderActionLoading === order.id
-                              ? <><i className="fas fa-spinner fa-spin"></i> Saving...</>
-                              : <><i className="fas fa-check"></i> Approve</>}
+                            {orderActionLoading === order.id ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-check"></i>} Approve
                           </button>
                         )}
-                        {order.status === 'Pending' && (
+                        {order.status !== 'Cancelled' && (
                           <button
                             onClick={() => handleCancelOrder(order.id)}
                             disabled={orderActionLoading === order.id}
-                            className="order-action-btn cancel-btn"
                             style={{
-                              flex: 1,
-                              padding: '10px',
-                              borderRadius: '8px',
-                              border: 'none',
-                              background: '#ff3b30',
-                              color: '#fff',
-                              fontWeight: 700,
-                              fontSize: '13px',
-                              cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
-                              opacity: orderActionLoading === order.id ? 0.7 : 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
-                              transition: 'all 0.2s ease'
+                              flex: 1, minWidth: '90px', padding: '9px 12px', borderRadius: '8px', border: 'none',
+                              background: '#ff3b30', color: '#fff', fontWeight: 700, fontSize: '12.5px', cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
+                              opacity: orderActionLoading === order.id ? 0.7 : 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s ease'
                             }}
                           >
                             <i className="fas fa-times"></i> Cancel
@@ -1953,84 +2003,25 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ products, categories, o
                         )}
                         <button
                           onClick={() => handleOpenEdit(order)}
-                          className="order-action-btn edit-btn"
                           style={{
-                            flex: order.status !== 'Pending' ? 1 : undefined,
-                            padding: '10px 16px',
-                            borderRadius: '8px',
-                            border: '2px solid var(--primary)',
-                            background: '#fff',
-                            color: 'var(--primary)',
-                            fontWeight: 700,
-                            fontSize: '13px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            transition: 'all 0.2s ease'
+                            padding: '9px 14px', borderRadius: '8px', border: '1px solid var(--border)',
+                            background: '#fff', color: 'var(--dark)', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s ease'
                           }}
                         >
                           <i className="fas fa-pen"></i> Edit
                         </button>
-                        {order.status === 'Cancelled' && (
-                          <button
-                            onClick={() => handleApproveOrder(order.id)}
-                            disabled={orderActionLoading === order.id}
-                            className="order-action-btn"
-                            style={{
-                              flex: 1,
-                              padding: '10px',
-                              borderRadius: '8px',
-                              border: 'none',
-                              background: 'var(--primary)',
-                              color: '#fff',
-                              fontWeight: 700,
-                              fontSize: '13px',
-                              cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
-                              opacity: orderActionLoading === order.id ? 0.7 : 1,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              gap: '6px',
-                              transition: 'all 0.2s ease'
-                            }}
-                          >
-                            {orderActionLoading === order.id
-                              ? <><i className="fas fa-spinner fa-spin"></i> Saving...</>
-                              : <><i className="fas fa-redo"></i> Re-Approve</>}
-                          </button>
-                        )}
                         <button
                           onClick={() => handleDeleteOrder(order.id)}
                           disabled={orderActionLoading === order.id}
-                          className="order-action-btn delete-btn"
                           style={{
-                            padding: '10px 16px',
-                            borderRadius: '8px',
-                            border: '1px solid #ff3b30',
-                            background: 'transparent',
-                            color: '#ff3b30',
-                            fontWeight: 700,
-                            fontSize: '13px',
-                            cursor: orderActionLoading === order.id ? 'not-allowed' : 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            gap: '6px',
-                            transition: 'all 0.2s ease',
-                            opacity: orderActionLoading === order.id ? 0.7 : 1
+                            padding: '9px 14px', borderRadius: '8px', border: '1px solid #fecdd3',
+                            background: '#fff1f2', color: '#e11d48', fontWeight: 600, fontSize: '12.5px', cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s ease'
                           }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.background = '#ff3b30';
-                            e.currentTarget.style.color = '#fff';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.background = 'transparent';
-                            e.currentTarget.style.color = '#ff3b30';
-                          }}
+                          title="Delete Order"
                         >
-                          {orderActionLoading === order.id ? <i className="fas fa-spinner fa-spin"></i> : <i className="fas fa-trash-alt"></i>}
+                          <i className="fas fa-trash"></i>
                         </button>
                       </div>
                     </div>
