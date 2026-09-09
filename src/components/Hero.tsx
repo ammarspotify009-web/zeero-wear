@@ -5,9 +5,10 @@ const Hero = () => {
     <section className="hero-banner" style={{ position: 'relative', overflow: 'hidden' }}>
       <a href="#new-arrivals">
         <img 
-          src="/hero-image.jpeg" 
+          src="/hero-image.webp" 
           alt="Hero banner" 
           className="hero-banner-img" 
+          fetchpriority="high"
           style={{ 
             width: '100%',
             height: '100%',
