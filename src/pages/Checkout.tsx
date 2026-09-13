@@ -66,6 +66,13 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const [xpayInstances, setXpayInstances] = useState<{card: any, jazzcash: any} | null>(null);
   const xpayInitRef = React.useRef<string>(''); // tracks which method is currently mounted
 
+  // Add refs for validation scrolling
+  const fullNameRef = React.useRef<HTMLInputElement>(null);
+  const phoneRef = React.useRef<HTMLInputElement>(null);
+  const addressRef = React.useRef<HTMLInputElement>(null);
+  const cityRef = React.useRef<HTMLInputElement>(null);
+  const easypaisaRef = React.useRef<HTMLInputElement>(null);
+
   React.useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
     
@@ -312,28 +319,47 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   };
 
   const validate = (): boolean => {
-    if (!form.fullName.trim()) { setError('Full name is required.'); return false; }
-    if (!form.phone.trim()) { setError('Phone number is required.'); return false; }
-    if (!form.fullName || !form.phone || !form.address || !form.city) {
-      setError("Please fill in all required fields.");
-      setIsLoading(false);
+    if (!form.fullName.trim()) { 
+      setError('Full name is required.'); 
+      fullNameRef.current?.focus();
+      fullNameRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false; 
+    }
+    if (!form.phone.trim()) { 
+      setError('Phone number is required.'); 
+      phoneRef.current?.focus();
+      phoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false; 
+    }
+    if (!/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())) {
+      setError('Please enter a valid phone number.');
+      phoneRef.current?.focus();
+      phoneRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return false;
+    }
+    if (!form.address.trim()) { 
+      setError('Delivery address is required.'); 
+      addressRef.current?.focus();
+      addressRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false; 
+    }
+    if (!form.city.trim()) { 
+      setError('City is required.'); 
+      cityRef.current?.focus();
+      cityRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return false; 
     }
 
     if (form.paymentMethod === 'easypaisa') {
       if (!/^03\d{9}$/.test(form.easypaisaNumber)) {
         setError("Please enter a valid 11-digit Easypaisa mobile number (e.g. 03001234567).");
+        easypaisaRef.current?.focus();
+        easypaisaRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
         setIsLoading(false);
         return false;
       }
     }
     
-    if (!/^[0-9+\-\s]{10,15}$/.test(form.phone.trim())) {
-      setError('Please enter a valid phone number.');
-      return false;
-    }
-    if (!form.address.trim()) { setError('Delivery address is required.'); return false; }
-    if (!form.city.trim()) { setError('City is required.'); return false; }
     return true;
   };
 
@@ -662,13 +688,13 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
               <div className="form-group">
                 <label>Full Name <span className="req">*</span></label>
-                <input name="fullName" value={form.fullName} onChange={handleChange} placeholder="Ali Khan" autoComplete="name" />
+                <input ref={fullNameRef} name="fullName" value={form.fullName} onChange={handleChange} placeholder="Ali Khan" autoComplete="name" />
               </div>
 
               <div className="form-row-2">
                 <div className="form-group">
                   <label>Phone Number <span className="req">*</span></label>
-                  <input name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="03XX-XXXXXXX" autoComplete="tel" />
+                  <input ref={phoneRef} name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder="03XX-XXXXXXX" autoComplete="tel" />
                 </div>
                 <div className="form-group">
                   <label>Email <span className="optional">(optional)</span></label>
@@ -678,12 +704,12 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
 
               <div className="form-group">
                 <label>Complete Address <span className="req">*</span></label>
-                <input name="address" value={form.address} onChange={handleChange} placeholder="House #, Street, Area" autoComplete="street-address" />
+                <input ref={addressRef} name="address" value={form.address} onChange={handleChange} placeholder="House #, Street, Area" autoComplete="street-address" />
               </div>
 
               <div className="form-group">
                 <label>City <span className="req">*</span></label>
-                <input name="city" value={form.city} onChange={handleChange} placeholder="Lahore" autoComplete="address-level2" />
+                <input ref={cityRef} name="city" value={form.city} onChange={handleChange} placeholder="Lahore" autoComplete="address-level2" />
               </div>
 
               <h2 className="checkout-section-title" style={{ marginTop: '28px' }}><i className="fas fa-wallet" /> Payment Method</h2>
@@ -719,7 +745,7 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
                     </label>
                     {form.paymentMethod === 'easypaisa' && (
                       <div className="form-group" style={{ marginTop: '10px', marginBottom: '15px' }}>
-                        <input type="tel" name="easypaisaNumber" value={form.easypaisaNumber} onChange={handleChange} placeholder="03XX-XXXXXXX" className="form-input" required />
+                        <input ref={easypaisaRef} type="tel" name="easypaisaNumber" value={form.easypaisaNumber} onChange={handleChange} placeholder="03XX-XXXXXXX" className="form-input" required />
                       </div>
                     )}
                   </>
