@@ -18,7 +18,10 @@ const PORT = process.env.PORT || 5000;
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabase = createClient(supabaseUrl, supabaseKey, {
+  auth: { persistSession: false }, // not needed in a long-running server process
+  realtime: { params: { eventsPerSecond: -1 } }, // disable WebSocket — saves connections
+});
 
 app.use(cors());
 app.use('/api/xpay/webhook', express.raw({ type: 'application/json' }));

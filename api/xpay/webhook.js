@@ -9,6 +9,21 @@ export const config = {
   },
 };
 
+// ─── SINGLETON SUPABASE CLIENT ─────────────────────────────────────────────────
+// IMPORTANT: Do NOT create a new createClient() inside the handler function.
+// Vercel Serverless Functions are warm-cached between invocations — creating a
+// new client on every webhook call would open a fresh DB connection each time
+// and never close the old one, rapidly exhausting the free-tier pool of 60.
+// ──────────────────────────────────────────────────────────────────────────────
+const supabase = createClient(
+  process.env.VITE_SUPABASE_URL,
+  process.env.VITE_SUPABASE_ANON_KEY,
+  {
+    auth: { persistSession: false }, // no session needed in serverless
+    realtime: { params: { eventsPerSecond: -1 } }, // disable WebSocket
+  }
+);
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -52,11 +67,6 @@ export default async function handler(req, res) {
 
     // Parse the payload
     const event = JSON.parse(rawBody.toString('utf8'));
-
-    const supabase = createClient(
-      process.env.VITE_SUPABASE_URL,
-      process.env.VITE_SUPABASE_ANON_KEY
-    );
 
     const eventType = event.event_type || event.type;
     const orderRef = event.data?.metadata?.order_reference;

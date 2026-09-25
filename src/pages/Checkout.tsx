@@ -280,6 +280,8 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
     const deliveryFee = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : DELIVERY_FEE;
     const total = subtotal + deliveryFee;
 
+    // 5s debounce (was 1s) — reduces Supabase writes ~5x during typing,
+    // which directly lowers connection pool pressure on the free tier.
     const timeoutId = setTimeout(() => {
       saveAbandonedCart({
         id: cartSessionId,
@@ -293,7 +295,7 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
         deliveryFee: deliveryFee,
         totalAmount: total,
       });
-    }, 1000);
+    }, 5000);
 
     return () => clearTimeout(timeoutId);
   }, [form, cartItems, cartSessionId]);
