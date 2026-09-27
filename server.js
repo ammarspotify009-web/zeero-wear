@@ -402,7 +402,7 @@ app.post('/api/admin/approve-order', async (req, res) => {
 
 app.post('/api/admin/login', (req, res) => {
   const { username, password } = req.body;
-  if (username === 'zeerowear' && password === 'zeerowear@786') {
+  if (username === 'zeerowear' && password === 'zeerowear@1947') {
     res.status(200).json({ success: true, token: 'fake-jwt-token-123' });
   } else {
     res.status(401).json({ error: 'Invalid username or password' });

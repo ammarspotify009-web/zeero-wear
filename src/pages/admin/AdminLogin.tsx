@@ -30,7 +30,7 @@ const AdminLogin = () => {
       }
     } catch {
       // Fallback: if server/function is unreachable, check hardcoded credentials
-      if (username === 'zeerowear' && password === 'zeerowear@786') {
+      if (username === 'zeerowear' && password === 'zeerowear@1947') {
         localStorage.setItem('adminToken', 'true');
         navigate('/admin');
       } else {
