@@ -25,7 +25,6 @@ const Footer = () => {
               <a href="https://www.facebook.com/share/1GWyAUokmK/?mibextid=wwXIfr" className="social-btn" target="_blank" rel="noreferrer"><i className="fab fa-facebook-f"></i></a>
               <a href="https://www.instagram.com/zeero.wear?igsh=MTF3NzVwbGxhc2IydQ==" className="social-btn" target="_blank" rel="noreferrer"><i className="fab fa-instagram"></i></a>
               <a href="https://www.tiktok.com/@zeero.wear?_r=1&_t=ZS-97jS1nHrfzL" className="social-btn" target="_blank" rel="noreferrer"><i className="fab fa-tiktok"></i></a>
-              <a href="https://wa.me/923117096337" className="social-btn" target="_blank" rel="noreferrer"><i className="fab fa-whatsapp"></i></a>
             </div>
           </div>
 
@@ -69,11 +68,6 @@ const Footer = () => {
           <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>Made with ❤️ by Traficore Agency</p>
         </div>
       </footer>
-
-      {/* WHATSAPP FAB */}
-      <a href="https://wa.me/923117096337" className="whatsapp-fab" title="Chat on WhatsApp" target="_blank" rel="noreferrer">
-        <i className="fab fa-whatsapp"></i>
-      </a>
 
       {/* MOBILE BOTTOM BAR */}
       <div className="mobile-bottom-bar">

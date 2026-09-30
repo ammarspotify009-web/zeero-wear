@@ -41,12 +41,9 @@ const Checkout: React.FC<CheckoutProps> = ({ cartItems, clearCart }) => {
   const [completedStats, setCompletedStats] = useState({ total: 0, totalItems: 0 });
   const [isPaymentElementComplete, setIsPaymentElementComplete] = useState(false);
 
-  // Scroll to top when page loads and fire InitiateCheckout event
+  // Scroll to top when page loads
   React.useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    if (typeof (window as any).fbq === 'function') {
-      (window as any).fbq('track', 'InitiateCheckout');
-    }
   }, []);
 
 
@@ -615,21 +612,6 @@ ${form.notes ? `CUSTOMER NOTE:\n${form.notes}` : ''}
       
       // Delete the abandoned cart now that they successfully checked out
       await deleteAbandonedCart(cartSessionId);
-      
-      if (typeof (window as any).fbq === 'function') {
-        (window as any).fbq('track', 'Purchase', {
-          value: total,
-          currency: 'PKR',
-          content_type: 'product',
-          content_ids: cartItems.map(item => String(item.id)),
-          contents: cartItems.map(item => ({
-            id: String(item.id),
-            quantity: item.quantity,
-            item_price: item.price,
-          })),
-          num_items: cartItems.reduce((acc, item) => acc + item.quantity, 0)
-        });
-      }
 
       setStep('success');
     } catch (err: unknown) {

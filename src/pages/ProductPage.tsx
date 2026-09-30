@@ -43,18 +43,6 @@ const ProductPage: React.FC<ProductPageProps> = ({ products, addToCart, toggleWi
     
     // Dynamic SEO Metadata
     const seoTitle = `${product.name} | Comfortable Kids Clothes - Zeero Kids`;
-    document.title = seoTitle;
-    
-    // Fire Facebook Pixel ViewContent
-    if (typeof (window as any).fbq === 'function') {
-      (window as any).fbq('track', 'ViewContent', {
-        content_name: product.name,
-        content_ids: [String(product.id)],
-        content_type: 'product',
-        value: product.price,
-        currency: 'PKR'
-      });
-    }
     
     let metaDescription = document.querySelector('meta[name="description"]');
     if (!metaDescription) {

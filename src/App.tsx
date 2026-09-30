@@ -104,16 +104,6 @@ function AppContent() {
       return [...prev, { ...item, quantity: 1 }];
     });
     setIsCartOpen(true);
-    if (typeof (window as any).fbq === 'function') {
-      (window as any).fbq('track', 'AddToCart', {
-        content_name: item.name,
-        content_ids: [String(item.id)],
-        content_type: 'product',
-        contents: [{ id: String(item.id), quantity: 1, item_price: item.price }],
-        value: item.price,
-        currency: 'PKR'
-      });
-    }
   };
 
   const removeFromCart = (id: string, size: string) => {
@@ -151,13 +141,6 @@ function AppContent() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
   const isCheckoutRoute = location.pathname === '/checkout';
-
-  // Fire Facebook Pixel PageView on route change
-  useEffect(() => {
-    if (typeof (window as any).fbq === 'function') {
-      (window as any).fbq('track', 'PageView');
-    }
-  }, [location.pathname]);
 
   return (
     <>
